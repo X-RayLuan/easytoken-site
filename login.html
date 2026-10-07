@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Log in · EasyToken</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="login">
+<div id="site-header"></div>
+<main class="auth">
+  <div class="auth-form">
+    <form id="f" novalidate>
+      <div class="eyebrow">Welcome back</div>
+      <h1>Log in</h1>
+      <label class="field">Email<input class="input" id="email" type="email" autocomplete="email" required></label>
+      <label class="field">Password<input class="input" id="pw" type="password" autocomplete="current-password" required></label>
+      <div class="err" id="err" role="alert"></div>
+      <button class="btn btn-primary btn-block" type="submit">Log in</button>
+      <p class="small muted">New to EasyToken? <a href="signup.html">Create an account</a> and get free credits.</p>
+    </form>
+  </div>
+  <div class="auth-side">
+    <h2>Pick up where you left off.</h2>
+    <ul>
+      <li>Check credits and usage per key</li>
+      <li>Create and revoke API keys</li>
+      <li>Download outputs from recent tasks</li>
+    </ul>
+    <p class="small" style="opacity:.6">easytoken.si</p>
+  </div>
+</main>
+<script src="assets/data.js"></script>
+<script src="assets/site.js"></script>
+<script>
+$("#f").addEventListener("submit", e => {
+  e.preventDefault();
+  const email = $("#email").value.trim(), acct = Account.get();
+  if (!email || !$("#pw").value) return $("#err").textContent = "Enter your email and password.";
+  if (!acct || acct.email !== email) return $("#err").innerHTML = `No account found for ${esc(email)} on this device. <a href="signup.html">Create one</a>.`;
+  location.href = "dashboard.html";
+});
+</script>
+</body>
+</html>

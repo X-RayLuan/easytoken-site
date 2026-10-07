@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Docs · EasyToken</title>
+<meta name="description" content="EasyToken API reference: authentication, tasks, chat completions, webhooks, errors and limits.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="docs">
+<div id="site-header"></div>
+<main class="wrap docs">
+  <aside aria-label="Docs sections">
+    <div class="eyebrow">Get started</div>
+    <a href="#quickstart">Quickstart</a>
+    <a href="#auth">Authentication</a>
+    <div class="eyebrow">API</div>
+    <a href="#tasks">Media tasks</a>
+    <a href="#get-task">Get a task</a>
+    <a href="#chat">Chat completions</a>
+    <a href="#webhooks">Webhooks</a>
+    <div class="eyebrow">Reference</div>
+    <a href="#models">Model IDs</a>
+    <a href="#errors">Errors</a>
+    <a href="#limits">Rate limits</a>
+    <a href="#billing">Billing</a>
+  </aside>
+
+  <article class="prose">
+    <h2 id="quickstart">Quickstart</h2>
+    <p>The API lives at <code>https://api.easytoken.si/v1</code>. Every model uses the same key. Video, image and audio models run as <strong>tasks</strong>: you create one, then receive the result by webhook or by polling. Chat models answer in the same request.</p>
+    <ol>
+      <li><a href="signup.html">Create an account</a> and copy your API key from the dashboard.</li>
+      <li>Send your first task with the request below.</li>
+      <li>Open the <code>result.url</code> when the task finishes.</li>
+    </ol>
+    <div class="term-card"><div class="bar"><span>first-task.sh</span><button class="copy" type="button" data-copy="#d1">Copy</button></div>
+<pre class="code" id="d1"><span class="k">curl</span> https://api.easytoken.si/v1/tasks \
+  -H <span class="s">"Authorization: Bearer $EASYTOKEN_KEY"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d '{
+    "model": <span class="m">"seedance-2.5"</span>,
+    "input": { "prompt": <span class="s">"Product spin on a marble table"</span> }
+  }'</pre></div>
+
+    <h2 id="auth">Authentication</h2>
+    <p>Send your key as a bearer token in the <code>Authorization</code> header. Keys start with <code>et_live_</code>. Keep them on your server; never ship them in a browser or mobile app.</p>
+    <p>You can create several keys, each with its own daily spend cap, from <a href="dashboard.html">Dashboard → API keys</a>.</p>
+
+    <h2 id="tasks">Media tasks</h2>
+    <p><code>POST /v1/tasks</code> creates a video, image or audio job and returns at once with a task ID.</p>
+    <div class="table-box"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>model</code></td><td>string</td><td>Model ID, e.g. <code>veo-3.1</code>. See <a href="#models">Model IDs</a>.</td></tr>
+        <tr><td><code>input</code></td><td>object</td><td>Model-specific input. Every model accepts <code>prompt</code>.</td></tr>
+        <tr><td><code>callback_url</code></td><td>string</td><td>Optional. We POST the finished task here.</td></tr>
+        <tr><td><code>metadata</code></td><td>object</td><td>Optional. Returned unchanged, useful for your own IDs.</td></tr>
+      </tbody></table></div>
+    <div class="term-card"><div class="bar"><span>response · 202</span></div>
+<pre class="code">{
+  "id": <span class="s">"task_8f2kq1x"</span>,
+  "model": <span class="m">"seedance-2.5"</span>,
+  "status": <span class="s">"queued"</span>,
+  "cost_usd": 0.55,
+  "created_at": <span class="s">"2026-10-07T12:00:00Z"</span>
+}</pre></div>
+
+    <h2 id="get-task">Get a task</h2>
+    <p><code>GET /v1/tasks/{id}</code> returns the current state. <code>status</code> moves through <code>queued</code> → <code>running</code> → <code>succeeded</code> or <code>failed</code>. Poll every 5 to 10 seconds, or use a webhook instead.</p>
+    <div class="term-card"><div class="bar"><span>succeeded</span></div>
+<pre class="code">{
+  "id": <span class="s">"task_8f2kq1x"</span>,
+  "status": <span class="s">"succeeded"</span>,
+  "result": { "url": <span class="s">"https://cdn.easytoken.si/o/task_8f2kq1x.mp4"</span>, "expires_at": <span class="s">"2026-10-21T12:01:30Z"</span> },
+  "cost_usd": 0.55
+}</pre></div>
+
+    <h2 id="chat">Chat completions</h2>
+    <p><code>POST /v1/chat/completions</code> follows the OpenAI format, including streaming, tools and JSON mode. Point any OpenAI SDK at our base URL.</p>
+    <div class="term-card"><div class="bar"><span>chat.js</span><button class="copy" type="button" data-copy="#d2">Copy</button></div>
+<pre class="code" id="d2"><span class="k">import</span> OpenAI <span class="k">from</span> <span class="s">"openai"</span>;
+
+<span class="k">const</span> client = <span class="k">new</span> OpenAI({
+  baseURL: <span class="s">"https://api.easytoken.si/v1"</span>,
+  apiKey: process.env.EASYTOKEN_KEY,
+});
+
+<span class="k">const</span> res = <span class="k">await</span> client.chat.completions.create({
+  model: <span class="m">"claude-opus-5-5"</span>,
+  messages: [{ role: <span class="s">"user"</span>, content: <span class="s">"Summarise this brief in 3 bullets"</span> }],
+});</pre></div>
+
+    <h2 id="webhooks">Webhooks</h2>
+    <p>When you pass <code>callback_url</code>, we send the same body as <a href="#get-task">Get a task</a> once the task finishes. Each request carries an <code>X-EasyToken-Signature</code> header: an HMAC-SHA256 of the raw body with your webhook secret. Reply with any 2xx within 10 seconds; we retry up to 5 times with backoff.</p>
+
+    <h2 id="models">Model IDs</h2>
+    <div class="table-box"><table><thead><tr><th>Model ID</th><th>Type</th><th>Endpoint</th><th class="r">Price</th></tr></thead><tbody id="model-rows"></tbody></table></div>
+
+    <h2 id="errors">Errors</h2>
+    <div class="table-box"><table>
+      <thead><tr><th>Status</th><th>Code</th><th>What to do</th></tr></thead>
+      <tbody>
+        <tr><td>401</td><td><code>invalid_api_key</code></td><td>Check the key and that it hasn't been revoked.</td></tr>
+        <tr><td>402</td><td><code>insufficient_credits</code></td><td>Top up in the dashboard, or raise the key's spend cap.</td></tr>
+        <tr><td>404</td><td><code>model_not_found</code></td><td>Use an ID from the Model IDs table.</td></tr>
+        <tr><td>422</td><td><code>invalid_input</code></td><td>The message names the field that failed.</td></tr>
+        <tr><td>429</td><td><code>rate_limited</code></td><td>Wait for the <code>Retry-After</code> seconds, then resend.</td></tr>
+        <tr><td>5xx</td><td><code>upstream_error</code></td><td>Safe to retry. Failed tasks are never billed.</td></tr>
+      </tbody></table></div>
+
+    <h2 id="limits">Rate limits</h2>
+    <p>New accounts can run 10 media tasks at once per model and 60 chat requests per minute. Limits rise automatically with usage; contact support if you need more for a launch.</p>
+
+    <h2 id="billing">Billing</h2>
+    <p>Usage is paid from prepaid credits. Each task's price is fixed when it is created and shown in <code>cost_usd</code>. Tasks that fail, time out or are blocked by a safety filter are refunded automatically.</p>
+  </article>
+</main>
+<div id="site-footer"></div>
+<script src="assets/data.js"></script>
+<script src="assets/site.js"></script>
+<script>
+$("#model-rows").innerHTML = MODELS.map(m => `<tr><td><code>${m.id}</code></td><td>${m.cat}</td><td><code>${m.chat ? "/chat/completions" : "/tasks"}</code></td><td class="r">${usd(m.ours)} <span class="muted small">/ ${esc(m.unit)}</span></td></tr>`).join("");
+</script>
+</body>
+</html>

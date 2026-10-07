@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Models · EasyToken</title>
+<meta name="description" content="Every video, image, audio and chat model on EasyToken, with official and EasyToken prices side by side.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="models">
+<div id="site-header"></div>
+<main class="wrap">
+  <div class="page-head">
+    <div class="eyebrow">Model catalog</div>
+    <h1>Every model, one key.</h1>
+    <p>Pick a model, try it in the playground, then call it with the same API key you use for everything else.</p>
+  </div>
+  <div class="toolbar">
+    <input class="input" id="q" type="search" placeholder="Search models or providers" aria-label="Search models">
+    <div class="filters" id="filters" style="margin:0"></div>
+  </div>
+  <div class="cards" id="cards"></div>
+  <div style="height:80px"></div>
+</main>
+<div id="site-footer"></div>
+<script src="assets/data.js"></script>
+<script src="assets/site.js"></script>
+<script>
+let filter = new URLSearchParams(location.search).get("cat") || "all";
+function render(){
+  const q = $("#q").value.trim().toLowerCase();
+  $("#filters").innerHTML = [["all","All"], ...CATS].map(([k,l]) => `<button class="filter" aria-pressed="${k===filter}" data-f="${k}">${l}</button>`).join("");
+  const list = MODELS.filter(m => (filter === "all" || m.cat === filter) && (!q || (m.name + m.provider + m.id).toLowerCase().includes(q)));
+  $("#cards").innerHTML = list.length ? list.map(m => `<article class="mcard">
+    <header><div><h3>${esc(m.name)}</h3><div class="prov">${esc(m.provider)}</div></div><span class="badge">${m.cat}</span></header>
+    <p>${esc(m.blurb)}</p>
+    <div class="price"><b>${usd(m.ours)}</b><s>${usd(m.official)}</s><span class="pill">−${pct(m)}%</span></div>
+    <div class="meta"><span>per ${esc(m.unit)}</span><span class="mono">${esc(m.id)}</span></div>
+    <div class="actions"><a class="btn btn-primary" href="playground.html?model=${m.id}">Try it</a><a class="btn btn-ghost" href="docs.html#${m.chat ? "chat" : "tasks"}">API reference</a></div>
+  </article>`).join("") : `<div class="empty surface">No models match “${esc(q)}”.</div>`;
+}
+$("#filters").addEventListener("click", e => { const b = e.target.closest("[data-f]"); if (!b) return; filter = b.dataset.f; render(); });
+$("#q").addEventListener("input", render);
+render();
+</script>
+</body>
+</html>

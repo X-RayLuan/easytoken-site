@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Create account · EasyToken</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="signup">
+<div id="site-header"></div>
+<main class="auth">
+  <div class="auth-form">
+    <form id="f" novalidate>
+      <div class="eyebrow">Free credits on signup</div>
+      <h1>Create your account</h1>
+      <label class="field">Work email<input class="input" id="email" type="email" autocomplete="email" required></label>
+      <label class="field">Password<input class="input" id="pw" type="password" autocomplete="new-password" minlength="8" required></label>
+      <label class="field">What will you build? <select class="input" id="use"><option>Video app or SaaS</option><option>Image or design tool</option><option>Chatbot or agent</option><option>Agency / client work</option><option>Just exploring</option></select></label>
+      <div class="err" id="err" role="alert"></div>
+      <button class="btn btn-primary btn-block" type="submit">Create account</button>
+      <p class="small muted">Already have an account? <a href="login.html">Log in</a>. By signing up you agree to the <a href="terms.html">Terms</a> and <a href="privacy.html">Privacy Policy</a>.</p>
+    </form>
+  </div>
+  <div class="auth-side">
+    <h2>One key for Veo, Seedance, Kling, GPT Image, Suno and Claude.</h2>
+    <ul>
+      <li>Free credits to test every model</li>
+      <li>No monthly fee, no card required to start</li>
+      <li>Failed tasks are refunded automatically</li>
+    </ul>
+    <p class="small" style="opacity:.6">easytoken.si</p>
+  </div>
+</main>
+<script src="assets/data.js"></script>
+<script src="assets/site.js"></script>
+<script>
+function newKey(){ const c = "abcdefghijkmnpqrstuvwxyz23456789"; let s = "et_live_"; for (let i = 0; i < 32; i++) s += c[Math.floor(Math.random() * c.length)]; return s; }
+$("#f").addEventListener("submit", e => {
+  e.preventDefault();
+  const email = $("#email").value.trim(), pw = $("#pw").value;
+  if (!/^\S+@\S+\.\S+$/.test(email)) return $("#err").textContent = "Enter a valid email address.";
+  if (pw.length < 8) return $("#err").textContent = "Use at least 8 characters for your password.";
+  Account.set({ email, use: $("#use").value, credits: 1.00, created: new Date().toISOString(),
+    keys: [{ name: "Default key", key: newKey(), cap: 10, created: new Date().toISOString().slice(0,10) }] });
+  location.href = "dashboard.html";
+});
+</script>
+</body>
+</html>

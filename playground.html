@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Playground · EasyToken</title>
+<meta name="description" content="Try any EasyToken model in the browser and copy the exact API request.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="playground">
+<div id="site-header"></div>
+<main class="wrap">
+  <div class="page-head">
+    <div class="eyebrow">Playground</div>
+    <h1>Try a model.</h1>
+    <p>Write a prompt, see the cost before you run it, and copy the request into your code.</p>
+  </div>
+  <div class="pg">
+    <form class="surface pg-form" id="pg-form">
+      <label class="field">Model
+        <select class="input" id="model"></select>
+      </label>
+      <label class="field">Prompt
+        <textarea class="input" id="prompt" required></textarea>
+      </label>
+      <label class="field" id="opt-wrap">Option
+        <select class="input" id="opt"></select>
+      </label>
+      <div class="pg-cost"><span class="muted">Cost per run</span><span class="num"><s class="muted" id="c-off"></s> <b id="c-ours"></b></span></div>
+      <button class="btn btn-primary btn-block" id="run" type="submit">Run</button>
+      <div class="demo-note small" id="demo-note">Preview mode. Runs here are simulated and free. <a href="signup.html">Create an account</a> to run real tasks.</div>
+    </form>
+    <div class="pg-out">
+      <div class="surface result" id="result">Your output will appear here.</div>
+      <div class="term-card">
+        <div class="bar"><span>request.sh</span><button class="copy" type="button" data-copy="#code">Copy</button></div>
+        <pre class="code" id="code"></pre>
+      </div>
+    </div>
+  </div>
+</main>
+<div id="site-footer"></div>
+<script src="assets/data.js"></script>
+<script src="assets/site.js"></script>
+<script>
+const OPTS = {video:["5 seconds","8 seconds","10 seconds"], image:["1:1 square","16:9 wide","9:16 vertical"], audio:["Default voice / style","Warm","Energetic"], chat:["Balanced","Concise","Detailed"]};
+const sel = $("#model");
+sel.innerHTML = CATS.map(([k,l]) => `<optgroup label="${l}">${MODELS.filter(m => m.cat === k).map(m => `<option value="${m.id}">${esc(m.name)}</option>`).join("")}</optgroup>`).join("");
+const want = new URLSearchParams(location.search).get("model");
+if (want && modelById(want)) sel.value = want;
+const acct = Account.get();
+if (acct) $("#demo-note").innerHTML = `Signed in as ${esc(acct.email)}. Runs are still simulated until the API is connected.`;
+
+function cur(){ return modelById(sel.value) }
+function sync(){
+  const m = cur();
+  $("#prompt").value = $("#prompt").dataset.touched ? $("#prompt").value : (m.input?.prompt || m.input?.text || "Write a 15-second ad script for a coffee brand.");
+  $("#opt").innerHTML = OPTS[m.cat].map(o => `<option>${o}</option>`).join("");
+  $("#c-off").textContent = usd(m.official);
+  $("#c-ours").textContent = m.chat ? `${usd(m.ours)} / 1M tok` : usd(m.ours);
+  $("#code").innerHTML = snippet(m, acct ? acct.keys?.[0]?.key || "$EASYTOKEN_KEY" : "$EASYTOKEN_KEY");
+  $("#result").textContent = "Your output will appear here.";
+}
+sel.addEventListener("change", () => { delete $("#prompt").dataset.touched; sync(); history.replaceState(null, "", "?model=" + sel.value); });
+$("#prompt").addEventListener("input", e => e.target.dataset.touched = "1");
+
+const SAMPLE = "Open on steam rising from a fresh cup.\nVO: \"Mornings are hard. Your coffee shouldn't be.\"\nCut to the pour, slow motion.\nVO: \"Roasted in small batches, delivered in 48 hours.\"\nEnd card: logo and \"First bag free.\"";
+$("#pg-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const m = cur(), out = $("#result"), btn = $("#run");
+  if (!$("#prompt").value.trim()) { out.textContent = "Add a prompt before running."; return; }
+  btn.disabled = true;
+  if (m.chat) {
+    out.innerHTML = `<div class="chat"></div>`; let i = 0;
+    const t = setInterval(() => { out.firstChild.textContent = SAMPLE.slice(0, i += 4); if (i >= SAMPLE.length) { clearInterval(t); btn.disabled = false; } }, 18);
+    return;
+  }
+  out.innerHTML = `<div style="width:100%;display:grid;justify-items:center"><div class="mono small">task queued · ${esc(m.id)} · est. ${esc(m.eta)}</div><div class="progress"><i></i></div></div>`;
+  let p = 0;
+  const t = setInterval(() => {
+    p += 7; $(".progress i", out).style.width = Math.min(p, 100) + "%";
+    if (p >= 100) {
+      clearInterval(t); btn.disabled = false;
+      const shape = m.cat === "image" ? "frame square" : "frame";
+      const label = m.cat === "audio" ? "♪ audio.mp3 · preview" : m.cat === "video" ? "▶ output.mp4 · preview" : "output.png · preview";
+      out.innerHTML = `<div style="width:100%;display:grid;gap:12px;justify-items:center"><div class="${shape}">${label}<br>${esc($("#prompt").value.slice(0,80))}</div><div class="small">Simulated result. Billed ${usd(m.ours)} on a real run, $0 if it fails.</div></div>`;
+    }
+  }, 120);
+});
+sync();
+</script>
+</body>
+</html>
