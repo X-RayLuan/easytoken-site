@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EasyToken</title>
+<meta name="description" content="EasyToken: one API key for the best video, image, audio and LLM models. Lower rates than official APIs, and failed jobs cost nothing.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a transit-token ledger. Brass coin accent on cool paper; one dark "terminal" card carries the product demo. */
+:root{
+  --paper:#F1F2EE; --surface:#FFFFFF; --ink:#16181D; --muted:#5A5F69; --line:#D8DAD3;
+  --brass:#B9781C; --brass-ink:#8A560C; --brass-soft:#F4E6CC;
+  --term:#16181D; --term-fg:#E9E7E0; --term-dim:#8C9099; --term-line:#2B2E35;
+  --good:#2E7A4E;
+  --f-display:"Familjen Grotesk","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r:10px; --max:1160px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#101215; --surface:#181B20; --ink:#ECEBE6; --muted:#9A9EA7; --line:#2A2D34;
+  --brass:#E0A23C; --brass-ink:#EBB65C; --brass-soft:#2D2516;
+  --term:#0A0B0D; --term-fg:#E9E7E0; --term-dim:#80848D; --term-line:#24272D;
+  --good:#5DBA84; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --paper:#101215; --surface:#181B20; --ink:#ECEBE6; --muted:#9A9EA7; --line:#2A2D34;
+  --brass:#E0A23C; --brass-ink:#EBB65C; --brass-soft:#2D2516;
+  --term:#0A0B0D; --term-fg:#E9E7E0; --term-dim:#80848D; --term-line:#24272D;
+  --good:#5DBA84; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:400 16px/1.6 var(--f-body);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px;border-radius:4px}
+.wrap{max-width:var(--max);margin:0 auto;padding-inline:clamp(16px,4vw,40px)}
+h1,h2,h3{font-family:var(--f-display);line-height:1.05;letter-spacing:-.02em;text-wrap:balance;margin:0}
+p{margin:0}
+.eyebrow{font:500 12px/1 var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--brass-ink)}
+.num{font-variant-numeric:tabular-nums}
+
+/* nav */
+header.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:24px;padding-block:14px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font:700 20px/1 var(--f-display);letter-spacing:-.02em}
+.brand small{font:500 12px/1 var(--f-mono);color:var(--muted);letter-spacing:0}
+.nav nav{display:flex;gap:22px;margin-left:auto;font-size:15px}
+.nav nav a{text-decoration:none;color:var(--muted)}
+.nav nav a:hover{color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:11px 20px;font:600 15px/1 var(--f-body);text-decoration:none;border:1px solid transparent;cursor:pointer;transition:transform .15s ease,background .15s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--ink);color:var(--paper)}
+.btn-ghost{border-color:var(--line);background:var(--surface);color:var(--ink)}
+.nav .btn{padding:9px 16px;font-size:14px}
+@media (max-width:760px){.nav nav{display:none}.nav .btn{margin-left:auto}}
+
+/* hero */
+.hero{padding-block:clamp(48px,8vw,96px) clamp(40px,6vw,72px)}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(32px,5vw,64px);align-items:center}
+@media (max-width:940px){.hero-grid{grid-template-columns:minmax(0,1fr)}}
+.hero h1{font-size:clamp(46px,7.4vw,92px);font-weight:700;margin-top:18px}
+.hero h1 .coin{display:inline-block;width:.78em;height:.78em;vertical-align:-.06em;margin-inline:.04em}
+.lede{font-size:clamp(17px,1.6vw,19px);color:var(--muted);max-width:34em;margin-top:22px}
+.cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.facts{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:34px;font-size:14px;color:var(--muted)}
+.facts span{display:inline-flex;align-items:center;gap:8px}
+.facts span::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--brass)}
+
+/* router demo */
+.router{background:var(--term);color:var(--term-fg);border-radius:14px;overflow:hidden;box-shadow:0 30px 60px -30px rgba(10,12,16,.45);min-width:0}
+.router-top{display:flex;gap:4px;padding:10px;border-bottom:1px solid var(--term-line);overflow-x:auto}
+.tab{flex:0 0 auto;background:transparent;border:0;color:var(--term-dim);font:500 13px/1 var(--f-mono);padding:9px 12px;border-radius:7px;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--term-line);color:var(--term-fg)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:14px 14px 4px}
+.chip{background:transparent;border:1px solid var(--term-line);color:var(--term-fg);font:500 13px/1 var(--f-body);padding:8px 11px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--brass);color:var(--brass);background:color-mix(in srgb,var(--brass) 12%,transparent)}
+pre.code{margin:0;padding:16px 18px 18px;font:400 13px/1.65 var(--f-mono);overflow-x:auto;white-space:pre;color:var(--term-fg)}
+.code .k{color:var(--term-dim)} .code .s{color:#E7C07B} .code .m{color:var(--brass);font-weight:500}
+.meter{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--term-line)}
+.meter div{padding:14px 18px;min-width:0}
+.meter div+div{border-left:1px solid var(--term-line)}
+.meter small{display:block;font:500 11px/1.2 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--term-dim)}
+.meter b{display:block;font:600 20px/1.3 var(--f-display);margin-top:4px;font-variant-numeric:tabular-nums}
+.meter .strike{text-decoration:line-through;text-decoration-color:var(--term-dim);color:var(--term-dim)}
+.meter .save{color:var(--brass)}
+
+/* sections */
+section{padding-block:clamp(56px,8vw,100px)}
+.sec-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:end;margin-bottom:36px}
+.sec-head h2{font-size:clamp(32px,4.4vw,52px);margin-top:14px}
+.sec-head p{color:var(--muted);max-width:32em}
+@media (max-width:820px){.sec-head{grid-template-columns:minmax(0,1fr)}}
+.rule{border-top:1px solid var(--line)}
+
+/* pricing table */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.filter{background:var(--surface);border:1px solid var(--line);color:var(--muted);font:500 14px/1 var(--f-body);padding:9px 14px;border-radius:999px;cursor:pointer}
+.filter[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.table-box{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+table{width:100%;border-collapse:collapse;min-width:640px;font-size:15px}
+th{font:500 11px/1.2 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:14px 18px;border-bottom:1px solid var(--line)}
+td{padding:14px 18px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right}
+td .model{font-weight:600}
+td .cat{font:500 11px/1 var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-left:8px}
+td.official{color:var(--muted);text-decoration:line-through}
+td.ours{font-weight:600}
+.pill{display:inline-block;font:600 13px/1 var(--f-mono);padding:6px 8px;border-radius:6px;background:var(--brass-soft);color:var(--brass-ink)}
+.note{font-size:13px;color:var(--muted);margin-top:12px}
+
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-top:1px solid var(--ink)}
+.step{padding:26px 24px 8px 0;min-width:0}
+.step+.step{padding-left:24px;border-left:1px solid var(--line)}
+.step .n{font:500 13px/1 var(--f-mono);color:var(--brass-ink)}
+.step h3{font-size:24px;margin-top:14px}
+.step p{color:var(--muted);margin-top:10px}
+.step code{font:400 13px/1.5 var(--f-mono);background:var(--surface);border:1px solid var(--line);padding:2px 6px;border-radius:5px;overflow-wrap:anywhere}
+@media (max-width:820px){.steps{grid-template-columns:minmax(0,1fr)}.step,.step+.step{padding:22px 0;border-left:0;border-bottom:1px solid var(--line)}}
+
+/* features */
+.features{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.feat{background:var(--paper);padding:28px 26px 30px;min-width:0}
+.feat h3{font-size:21px;letter-spacing:-.01em}
+.feat p{color:var(--muted);margin-top:10px;font-size:15px}
+.feat svg{width:26px;height:26px;color:var(--brass);margin-bottom:18px}
+@media (max-width:900px){.features{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.features{grid-template-columns:minmax(0,1fr)}}
+
+/* sdk */
+.sdk{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(28px,5vw,64px);align-items:center}
+@media (max-width:900px){.sdk{grid-template-columns:minmax(0,1fr)}}
+.sdk h2{font-size:clamp(30px,4vw,46px);margin-top:14px}
+.sdk p{color:var(--muted);margin-top:16px;max-width:30em}
+.sdk ul{margin:22px 0 0;padding:0;list-style:none;display:grid;gap:10px}
+.sdk li{display:flex;gap:10px;align-items:baseline}
+.sdk li::before{content:"→";color:var(--brass-ink);font-family:var(--f-mono)}
+.term-card{background:var(--term);border-radius:14px;overflow:hidden;min-width:0}
+.term-card .bar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--term-line);font:500 12px/1 var(--f-mono);color:var(--term-dim)}
+.copy{background:transparent;border:1px solid var(--term-line);color:var(--term-fg);font:500 12px/1 var(--f-mono);padding:6px 10px;border-radius:6px;cursor:pointer}
+
+/* faq */
+.faq{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:clamp(24px,5vw,64px)}
+@media (max-width:820px){.faq{grid-template-columns:minmax(0,1fr)}}
+.faq h2{font-size:clamp(32px,4.4vw,52px);margin-top:14px}
+details{border-bottom:1px solid var(--line);padding-block:18px}
+details:first-child{border-top:1px solid var(--line)}
+summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:16px;font:600 18px/1.35 var(--f-display)}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-family:var(--f-mono);color:var(--brass-ink);flex:0 0 auto}
+details[open] summary::after{content:"−"}
+details p{color:var(--muted);margin-top:10px;max-width:40em}
+
+/* closing */
+.closing{background:var(--ink);color:var(--paper);border-radius:18px;padding:clamp(36px,6vw,72px);display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:28px;align-items:end}
+.closing h2{font-size:clamp(34px,5vw,64px)}
+.closing p{opacity:.72;margin-top:14px;max-width:28em}
+.closing .btn-primary{background:var(--brass);color:#16181D}
+.closing .btn-ghost{background:transparent;border-color:color-mix(in srgb,var(--paper) 30%,transparent);color:var(--paper)}
+.closing .cta-row{justify-content:flex-end;margin:0}
+@media (max-width:820px){.closing{grid-template-columns:minmax(0,1fr)}.closing .cta-row{justify-content:flex-start}}
+
+footer{padding-block:40px 56px;color:var(--muted);font-size:14px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:16px 32px;justify-content:space-between;align-items:center}
+footer nav{display:flex;flex-wrap:wrap;gap:20px}
+footer a{text-decoration:none}
+footer a:hover{color:var(--ink)}
+
+@media (prefers-reduced-motion:no-preference){
+  .hero-copy>*{animation:rise .6s ease both}
+  .hero-copy>*:nth-child(2){animation-delay:.05s}.hero-copy>*:nth-child(3){animation-delay:.1s}.hero-copy>*:nth-child(4){animation-delay:.15s}
+  @keyframes rise{from{transform:translateY(10px)}to{transform:none}}
+  .meter b{transition:color .2s}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="coin" viewBox="0 0 32 32">
+    <circle cx="16" cy="16" r="14.5" fill="var(--brass)"/>
+    <circle cx="16" cy="16" r="10.5" fill="none" stroke="var(--paper)" stroke-width="1.6" stroke-dasharray="2.2 2.2"/>
+    <rect x="11" y="10" width="10" height="2.6" rx="1.3" fill="var(--paper)"/>
+    <rect x="14.7" y="10" width="2.6" height="12" rx="1.3" fill="var(--paper)"/>
+  </symbol>
+</svg>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><svg width="26" height="26"><use href="#coin"/></svg>EasyToken <small>.si</small></a>
+    <nav aria-label="Main">
+      <a href="#models">Models</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#how">How it works</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://docs.easytoken.si">Docs</a>
+    </nav>
+    <a class="btn btn-primary" href="https://easytoken.si/signup">Get API key</a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <div class="eyebrow">Video · Image · Audio · LLM</div>
+        <h1>Every model.<br>One <svg class="coin" aria-hidden="true"><use href="#coin"/></svg>token.</h1>
+        <p class="lede">EasyToken puts Veo, Seedance, Kling, GPT Image, Suno, Claude and more behind a single API key and a single bill. You get the same models at lower rates, and a failed job costs you nothing.</p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://easytoken.si/signup">Get your free API key</a>
+          <a class="btn btn-ghost" href="#pricing">Compare prices</a>
+        </div>
+        <div class="facts">
+          <span>Failed tasks billed at $0</span>
+          <span>No monthly fee</span>
+          <span>Free credits on signup</span>
+        </div>
+      </div>
+
+      <div class="router" id="models" aria-label="Try the API">
+        <div class="router-top" role="tablist" id="tabs"></div>
+        <div class="chips" id="chips"></div>
+        <pre class="code" id="code"></pre>
+        <div class="meter">
+          <div><small>Official</small><b class="strike" id="m-off">–</b></div>
+          <div><small>EasyToken</small><b id="m-ours">–</b></div>
+          <div><small>You save</small><b class="save" id="m-save">–</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing" class="rule">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <div class="eyebrow">Pricing</div>
+          <h2>Same models. Smaller bill.</h2>
+        </div>
+        <p>Pay per output, from prepaid credits. No seats, no minimums. Top up when you need to, and see every charge per task in the dashboard.</p>
+      </div>
+      <div class="filters" id="filters"></div>
+      <div class="table-box">
+        <table>
+          <thead><tr><th>Model</th><th>Billed per</th><th class="r">Official</th><th class="r">EasyToken</th><th class="r">Saving</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <p class="note">Launch rates in USD. Live per-model pricing is always shown in your dashboard before you run a task.</p>
+    </div>
+  </section>
+
+  <section id="how" class="rule">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <div class="eyebrow">How it works</div>
+          <h2>From key to first video in three calls.</h2>
+        </div>
+        <p>Media jobs run asynchronously, so a long Veo render never ties up your server. Chat models answer in the same request.</p>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="n">Step 1</div><h3>Create a key</h3><p>Sign up, claim your free credits, and copy one key that works for every model.</p></div>
+        <div class="step"><div class="n">Step 2</div><h3>Send a task</h3><p>POST to <code>/v1/tasks</code> with a <code>model</code> and its input. Switching models means changing one string.</p></div>
+        <div class="step"><div class="n">Step 3</div><h3>Get the result</h3><p>We call your <code>callback_url</code> when the file is ready, or you poll <code>/v1/tasks/{id}</code>.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="rule">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <div class="eyebrow">Why EasyToken</div>
+          <h2>Built for teams that ship AI features.</h2>
+        </div>
+        <p>You shouldn't need five vendor accounts, five invoices and five SDKs to put video, voice and chat in one product.</p>
+      </div>
+      <div class="features">
+        <div class="feat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 12h6l3-6M13 18l-3-6M14 6h6M14 18h6"/></svg>
+          <h3>Automatic fallback</h3><p>If an upstream provider stalls or rate-limits, we retry on a healthy route so your users don't see an error.</p>
+        </div>
+        <div class="feat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M9 12l2 2 4-4"/></svg>
+          <h3>Pay only for results</h3><p>A task that fails or gets filtered is refunded automatically. You are charged for files you receive.</p>
+        </div>
+        <div class="feat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 10h8M8 14h5"/></svg>
+          <h3>One bill</h3><p>One credit balance and one invoice across every model, with cost broken down per task, per key and per day.</p>
+        </div>
+        <div class="feat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3v18M5 8h14M7 16h10"/></svg>
+          <h3>Spend caps per key</h3><p>Give each app, client or teammate its own key with a daily limit, and revoke it in one click.</p>
+        </div>
+        <div class="feat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5l6 7-6 7M13 19h6"/></svg>
+          <h3>Playground</h3><p>Test prompts against any model in the browser, then copy the exact request as curl, Python or JavaScript.</p>
+        </div>
+        <div class="feat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/></svg>
+          <h3>Your files stay yours</h3><p>Outputs are stored for 14 days for download, then deleted. Prompts are never used for training.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="rule">
+    <div class="wrap sdk">
+      <div>
+        <div class="eyebrow">Drop-in</div>
+        <h2>Already using the OpenAI SDK? Change two lines.</h2>
+        <p>Our chat endpoint speaks the OpenAI format, so existing code, LangChain apps and coding agents work after you swap the base URL and key.</p>
+        <ul>
+          <li>Python, Node, Go, or plain curl</li>
+          <li>Streaming, tool calls and JSON mode</li>
+          <li>Same key for video and image tasks</li>
+        </ul>
+      </div>
+      <div class="term-card">
+        <div class="bar"><span>app.py</span><button class="copy" id="copy-sdk" type="button">Copy</button></div>
+<pre class="code" id="sdk-code"><span class="k">from</span> openai <span class="k">import</span> OpenAI
+
+client = OpenAI(
+    base_url=<span class="s">"https://api.easytoken.si/v1"</span>,
+    api_key=<span class="s">"et_live_..."</span>,
+)
+
+reply = client.chat.completions.create(
+    model=<span class="m">"claude-opus-5-5"</span>,
+    messages=[{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"Write a 15s ad script"</span>}],
+)
+print(reply.choices[0].message.content)</pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" class="rule">
+    <div class="wrap faq">
+      <div>
+        <div class="eyebrow">FAQ</div>
+        <h2>Questions before you switch.</h2>
+      </div>
+      <div>
+        <details open><summary>Are these the official models?</summary><p>Yes. EasyToken routes your request to the model provider's own endpoint or an authorised host. The output is the same model you would get directly.</p></details>
+        <details><summary>How can you be cheaper than the official API?</summary><p>We buy capacity in volume across many customers and pass most of the discount on. Prices are listed per model, and you see the cost before each task runs.</p></details>
+        <details><summary>What happens when a task fails?</summary><p>Failed, timed-out and safety-filtered tasks are refunded to your balance automatically. You don't need to file a ticket.</p></details>
+        <details><summary>Do credits expire?</summary><p>No. Prepaid credits stay on your account until you use them.</p></details>
+        <details><summary>Are there rate limits?</summary><p>Every account starts with generous concurrency per model. If you need more for a launch, contact us and we raise it the same day.</p></details>
+        <details><summary>Can I get an invoice for my company?</summary><p>Yes. Add your company name and VAT number in billing settings and every top-up generates a proper invoice.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="closing">
+        <div>
+          <h2>Start with free credits.</h2>
+          <p>Create a key in under a minute and run your first video, image or chat request today.</p>
+        </div>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://easytoken.si/signup">Get your free API key</a>
+          <a class="btn btn-ghost" href="https://docs.easytoken.si">Read the docs</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a class="brand" href="#top"><svg width="22" height="22"><use href="#coin"/></svg>EasyToken</a>
+    <nav aria-label="Footer">
+      <a href="#pricing">Pricing</a><a href="https://docs.easytoken.si">Docs</a><a href="https://easytoken.si/status">Status</a><a href="https://easytoken.si/terms">Terms</a><a href="https://easytoken.si/privacy">Privacy</a>
+    </nav>
+    <span>© 2026 EasyToken · easytoken.si</span>
+  </div>
+</footer>
+
+<script>
+// Edit this list to change the hero demo and the pricing table. Prices in USD.
+const MODELS = [
+  {id:"veo-3.1",            name:"Veo 3.1",          cat:"video", unit:"8s clip, 1080p", official:6.00, ours:2.50,  input:{prompt:"A barista pours latte art, slow motion", duration:8}},
+  {id:"seedance-2.5",       name:"Seedance 2.5",     cat:"video", unit:"5s clip, 1080p", official:1.20, ours:0.55,  input:{prompt:"Product spin on a marble table", resolution:"1080p"}},
+  {id:"kling-3.0",          name:"Kling 3.0",        cat:"video", unit:"5s clip, pro",   official:0.98, ours:0.60,  input:{prompt:"Drone shot over Lake Bled at dawn", mode:"pro"}},
+  {id:"gpt-image-2.5",      name:"GPT Image 2.5",    cat:"image", unit:"image, 2K",      official:0.25, ours:0.04,  input:{prompt:"Flat-lay of a skincare kit, soft light", size:"2048x2048"}},
+  {id:"flux-2-pro",         name:"FLUX.2 Pro",       cat:"image", unit:"image, 1MP",     official:0.05, ours:0.03,  input:{prompt:"Poster for a jazz night in Ljubljana"}},
+  {id:"nano-banana-pro",    name:"Nano Banana Pro",  cat:"image", unit:"image, 2K",      official:0.14, ours:0.09,  input:{prompt:"Swap the background to a beach", image_url:"https://…/in.jpg"}},
+  {id:"suno-v6",            name:"Suno V6",          cat:"audio", unit:"song, up to 4 min", official:0.10, ours:0.06, input:{prompt:"Upbeat synth-pop jingle about coffee"}},
+  {id:"elevenlabs-v3",      name:"ElevenLabs v3",    cat:"audio", unit:"1k characters",  official:0.30, ours:0.18,  input:{text:"Welcome to EasyToken.", voice:"Rachel"}},
+  {id:"claude-opus-5-5",    name:"Claude Opus 5.5",  cat:"chat",  unit:"1M output tokens", official:25.00, ours:20.00, chat:true},
+  {id:"gpt-5.5",            name:"GPT-5.5",          cat:"chat",  unit:"1M output tokens", official:10.00, ours:8.00, chat:true},
+  {id:"gemini-3-pro",       name:"Gemini 3 Pro",     cat:"chat",  unit:"1M output tokens", official:12.00, ours:9.60, chat:true},
+];
+const CATS = [["video","Video"],["image","Image"],["audio","Audio"],["chat","Chat"]];
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const usd = n => "$" + (n < 1 ? n.toFixed(3).replace(/0$/, "") : n.toFixed(2));
+const pct = m => Math.round((1 - m.ours / m.official) * 100);
+
+let cat = "video", current = MODELS[0];
+
+function snippet(m){
+  const S = v => `<span class="s">${esc(JSON.stringify(v))}</span>`;
+  if (m.chat) return `<span class="k">curl</span> https://api.easytoken.si/v1/chat/completions \\
+  -H <span class="s">"Authorization: Bearer $EASYTOKEN_KEY"</span> \\
+  -d '{
+    "model": <span class="m">${esc(JSON.stringify(m.id))}</span>,
+    "messages": [{"role": "user", "content": "Hi"}]
+  }'`;
+  const inp = Object.entries(m.input).map(([k,v]) => `      ${S(k)}: ${S(v)}`).join(",\n");
+  return `<span class="k">curl</span> https://api.easytoken.si/v1/tasks \\
+  -H <span class="s">"Authorization: Bearer $EASYTOKEN_KEY"</span> \\
+  -d '{
+    "model": <span class="m">${esc(JSON.stringify(m.id))}</span>,
+    "input": {
+${inp}
+    },
+    "callback_url": <span class="s">"https://yourapp.com/hooks/et"</span>
+  }'`;
+}
+
+function renderRouter(){
+  $("#tabs").innerHTML = CATS.map(([k,l]) =>
+    `<button class="tab" role="tab" aria-selected="${k===cat}" data-cat="${k}">${l}</button>`).join("");
+  $("#chips").innerHTML = MODELS.filter(m => m.cat === cat).map(m =>
+    `<button class="chip" aria-pressed="${m===current}" data-id="${m.id}">${esc(m.name)}</button>`).join("");
+  $("#code").innerHTML = snippet(current);
+  $("#m-off").textContent = usd(current.official);
+  $("#m-ours").textContent = usd(current.ours);
+  $("#m-save").textContent = pct(current) + "%";
+}
+$("#tabs").addEventListener("click", e => {
+  const b = e.target.closest("[data-cat]"); if (!b) return;
+  cat = b.dataset.cat; current = MODELS.find(m => m.cat === cat); renderRouter();
+});
+$("#chips").addEventListener("click", e => {
+  const b = e.target.closest("[data-id]"); if (!b) return;
+  current = MODELS.find(m => m.id === b.dataset.id); renderRouter();
+});
+
+let filter = "all";
+function renderTable(){
+  $("#filters").innerHTML = [["all","All models"], ...CATS].map(([k,l]) =>
+    `<button class="filter" aria-pressed="${k===filter}" data-f="${k}">${l}</button>`).join("");
+  $("#rows").innerHTML = MODELS.filter(m => filter === "all" || m.cat === filter).map(m => `<tr>
+    <td><span class="model">${esc(m.name)}</span><span class="cat">${m.cat}</span></td>
+    <td>${esc(m.unit)}</td>
+    <td class="r official">${usd(m.official)}</td>
+    <td class="r ours">${usd(m.ours)}</td>
+    <td class="r"><span class="pill">−${pct(m)}%</span></td></tr>`).join("");
+}
+$("#filters").addEventListener("click", e => {
+  const b = e.target.closest("[data-f]"); if (!b) return;
+  filter = b.dataset.f; renderTable();
+});
+
+$("#copy-sdk").addEventListener("click", e => {
+  const btn = e.currentTarget, text = $("#sdk-code").textContent;
+  navigator.clipboard.writeText(text).then(() => { btn.textContent = "Copied"; setTimeout(() => btn.textContent = "Copy", 1500); })
+    .catch(() => { const r = document.createRange(); r.selectNodeContents($("#sdk-code")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); });
+});
+
+renderRouter(); renderTable();
+</script>
+</body>
+</html>
