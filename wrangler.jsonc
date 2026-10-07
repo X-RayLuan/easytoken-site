@@ -6,7 +6,9 @@
     "directory": ".",
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash"
-  }
-  // When easytoken.si is on this Cloudflare account, add:
-  // , "routes": [{ "pattern": "easytoken.si", "custom_domain": true }, { "pattern": "www.easytoken.si", "custom_domain": true }]
+  },
+  "routes": [
+    { "pattern": "easytoken.si", "custom_domain": true },
+    { "pattern": "www.easytoken.si", "custom_domain": true }
+  ]
 }
