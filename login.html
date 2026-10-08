@@ -35,12 +35,16 @@
 <script src="assets/data.js"></script>
 <script src="assets/site.js"></script>
 <script>
-$("#f").addEventListener("submit", e => {
+$("#f").addEventListener("submit", async e => {
   e.preventDefault();
-  const email = $("#email").value.trim(), acct = Account.get();
+  const email = $("#email").value.trim(), btn = $("button[type=submit]", e.target);
   if (!email || !$("#pw").value) return $("#err").textContent = "Enter your email and password.";
-  if (!acct || acct.email !== email) return $("#err").innerHTML = `No account found for ${esc(email)} on this device. <a href="signup.html">Create one</a>.`;
-  location.href = "dashboard.html";
+  btn.disabled = true; $("#err").textContent = "";
+  try {
+    await api("/login", { email, password: $("#pw").value });
+    Account.set({ email });
+    location.href = "dashboard.html";
+  } catch (err) { $("#err").textContent = err.message; btn.disabled = false; }
 });
 </script>
 </body>

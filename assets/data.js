@@ -2,17 +2,17 @@
 const MODELS = [
   {id:"veo-3.1",         name:"Veo 3.1",         provider:"Google",     cat:"video", unit:"8s clip, 1080p",    official:6.00,  ours:2.50,  eta:"~90s",
    blurb:"Cinematic text-to-video and image-to-video with native audio.", input:{prompt:"A barista pours latte art, slow motion", duration:8}},
-  {id:"seedance-2.5",    name:"Seedance 2.5",    provider:"ByteDance",  cat:"video", unit:"5s clip, 1080p",    official:1.20,  ours:0.55,  eta:"~60s",
-   blurb:"Fast multi-shot video with strong motion and character consistency.", input:{prompt:"Product spin on a marble table", resolution:"1080p"}},
+  {id:"seedance-2.5",    name:"Seedance 2.5",    provider:"ByteDance",  cat:"video", unit:"5s clip, 720p",     official:2.37,  ours:1.95,  eta:"~60s",
+   blurb:"Fast multi-shot video with strong motion and character consistency.", input:{prompt:"Product spin on a marble table", aspect_ratio:"16:9"}},
   {id:"kling-3.0",       name:"Kling 3.0",       provider:"Kuaishou",   cat:"video", unit:"5s clip, pro",      official:0.98,  ours:0.60,  eta:"~120s",
    blurb:"Realistic human motion, camera control and image-to-video.", input:{prompt:"Drone shot over Lake Bled at dawn", mode:"pro"}},
-  {id:"gpt-image-2.5",   name:"GPT Image 2.5",   provider:"OpenAI",     cat:"image", unit:"image, 2K",         official:0.25,  ours:0.04,  eta:"~20s",
-   blurb:"Precise prompt following and readable text inside images.", input:{prompt:"Flat-lay of a skincare kit, soft light", size:"2048x2048"}},
+  {id:"gpt-image-2.5",   name:"GPT Image 2.5",   provider:"OpenAI",     cat:"image", unit:"image, 2K",         official:0.25,  ours:0.06,  eta:"~20s",
+   blurb:"Precise prompt following and readable text inside images.", input:{prompt:"Flat-lay of a skincare kit, soft light", aspect_ratio:"1:1"}},
   {id:"flux-2-pro",      name:"FLUX.2 Pro",      provider:"Black Forest Labs", cat:"image", unit:"image, 1MP", official:0.05,  ours:0.03,  eta:"~8s",
    blurb:"Photoreal images with fine detail at low cost per image.", input:{prompt:"Poster for a jazz night in Ljubljana"}},
-  {id:"nano-banana-pro", name:"Nano Banana Pro", provider:"Google",     cat:"image", unit:"image, 2K",         official:0.14,  ours:0.09,  eta:"~15s",
-   blurb:"Conversational image editing: swap backgrounds, keep faces.", input:{prompt:"Swap the background to a beach", image_url:"https://example.com/in.jpg"}},
-  {id:"suno-v6",         name:"Suno V6",         provider:"Suno",       cat:"audio", unit:"song, up to 4 min", official:0.10,  ours:0.06,  eta:"~45s",
+  {id:"nano-banana-pro", name:"Nano Banana Pro", provider:"Google",     cat:"image", unit:"image, 2K",         official:0.15,  ours:0.11,  eta:"~15s",
+   blurb:"Conversational image editing: swap backgrounds, keep faces.", input:{prompt:"Swap the background to a beach", image_urls:["https://example.com/in.jpg"]}},
+  {id:"suno-v6",         name:"Suno V6",         provider:"Suno",       cat:"audio", unit:"song, up to 4 min", official:0.10,  ours:0.08,  eta:"~45s",
    blurb:"Full songs with vocals from a text prompt or your own lyrics.", input:{prompt:"Upbeat synth-pop jingle about coffee"}},
   {id:"elevenlabs-v3",   name:"ElevenLabs v3",   provider:"ElevenLabs", cat:"audio", unit:"1k characters",     official:0.30,  ours:0.18,  eta:"~3s",
    blurb:"Expressive text-to-speech in 70+ languages.", input:{text:"Welcome to EasyToken.", voice:"Rachel"}},
@@ -53,9 +53,17 @@ ${inp}
   }'`;
 }
 
-// Demo account kept in this browser only (no backend yet).
+// Same-origin dashboard API (session cookie). Throws Error with .status/.code on failure.
+async function api(path, body, method){
+  const r = await fetch("/api" + path, { method: method || (body ? "POST" : "GET"), headers: body ? { "content-type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined, credentials: "same-origin" });
+  const data = await r.json().catch(() => ({}));
+  if (r.status === 401 && path !== "/login") Account.clear();
+  if (!r.ok) { const e = new Error(data.error?.message || "Request failed. Please retry."); e.status = r.status; e.code = data.error?.code; throw e; }
+  return data;
+}
+// Signed-in hint for the header only. The real session is an HttpOnly cookie checked by the server.
 const Account = {
   get(){ try { return JSON.parse(localStorage.getItem("et_account")) } catch { return null } },
-  set(a){ try { localStorage.setItem("et_account", JSON.stringify(a)) } catch {} },
+  set(a){ try { localStorage.setItem("et_account", JSON.stringify({ email: a.email })) } catch {} },
   clear(){ try { localStorage.removeItem("et_account") } catch {} },
 };

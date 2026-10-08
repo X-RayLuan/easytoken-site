@@ -1,14 +1,29 @@
 {
-  // Static site served as a Cloudflare Worker with static assets (same platform as easyveo.com).
+  // Static site + API in one Worker. /api/* and /v1/* run the script; everything else is served from assets.
   "name": "easytoken",
+  "main": "worker/index.js",
   "compatibility_date": "2025-09-01",
   "assets": {
     "directory": ".",
+    "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "html_handling": "auto-trailing-slash"
+    "html_handling": "auto-trailing-slash",
+    "run_worker_first": ["/api/*", "/v1/*"]
   },
   "routes": [
     { "pattern": "easytoken.si", "custom_domain": true },
-    { "pattern": "www.easytoken.si", "custom_domain": true }
-  ]
+    { "pattern": "www.easytoken.si", "custom_domain": true },
+    { "pattern": "api.easytoken.si", "custom_domain": true }
+  ],
+  "d1_databases": [
+    { "binding": "DB", "database_name": "easytoken", "database_id": "REPLACE_WITH_D1_ID", "migrations_dir": "migrations" }
+  ],
+  // Poll open tasks and retry customer webhooks.
+  "triggers": { "crons": ["* * * * *"] },
+  "vars": {
+    "PUBLIC_ORIGIN": "https://api.easytoken.si",
+    "SIGNUP_CREDIT_USD": "0.25",
+    "CHAT_UPSTREAM_BASE": "https://openrouter.ai/api/v1"
+  }
+  // Secrets (wrangler secret put): KIE_API_KEY, INTERNAL_SECRET, CHAT_UPSTREAM_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
 }

@@ -52,7 +52,7 @@
       <div class="surface kpi"><small>Credit balance</small><b id="b-bal"></b></div>
       <div><b>Add credits</b><p class="small muted" style="margin:4px 0 12px">Credits never expire. Top-ups of $500 or more get bonus credits.</p>
         <div class="topups" id="topups"></div></div>
-      <div class="row"><span class="small muted">Payments open when billing goes live.</span><button class="btn btn-primary" id="pay" type="button">Continue to payment</button></div>
+      <div class="row"><span class="small muted">Secure card payment by Stripe.</span><button class="btn btn-primary" id="pay" type="button">Continue to payment</button></div>
     </section>
 
     <section class="dash-panel" data-panel="settings" hidden style="padding:0">
@@ -68,79 +68,96 @@
 <script src="assets/data.js"></script>
 <script src="assets/site.js"></script>
 <script>
-let acct = Account.get();
-const sample = !acct;
-if (sample) {
-  $("#sample-note").hidden = false;
-  acct = { email: "demo@example.com", credits: 42.18, keys: [{ name: "Production app", key: "et_live_sample0000000000000000000000", cap: 50, created: "2026-09-21" }] };
-}
-const toast = msg => { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.append(t); setTimeout(() => t.remove(), 2200); };
-const save = () => { if (!sample) Account.set(acct); };
+const toast = msg => { const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.append(t); setTimeout(() => t.remove(), 2600); };
+const ago = iso => { const s = (Date.now() - Date.parse(iso)) / 1000; return s < 60 ? "just now" : s < 3600 ? Math.round(s / 60) + " min ago" : s < 86400 ? Math.round(s / 3600) + " h ago" : iso.slice(0, 10); };
+let sample = false, me = null, keyList = [], freshKey = null;
 
-// Example usage, seeded per account so it stays stable between visits.
-let seed = [...acct.email].reduce((a, c) => a + c.charCodeAt(0), 7);
-const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
-const days = Array.from({length:14}, (_, i) => +(sample ? 1.5 + rnd() * 6 : rnd() * 0.12).toFixed(2));
-const recent = Array.from({length:6}, (_, i) => { const m = MODELS[Math.floor(rnd() * MODELS.length)]; const st = i === 0 ? "running" : rnd() < .12 ? "failed" : "done";
-  return { id: "task_" + Math.floor(rnd() * 1e8).toString(36), m, st, cost: st === "failed" ? 0 : m.chat ? +(m.ours / 1000).toFixed(3) : m.ours, when: i === 0 ? "just now" : i * 7 + " min ago" }; });
+// Signed-out visitors see a fixed sample account so the page still explains itself.
+const SAMPLE = {
+  user: { email: "demo@example.com", balance_usd: 42.18, webhook_secret: "whsec_sample000000000000000000000" },
+  keys: [{ id: "k", name: "Production app", preview: "et_live_samp••••0000", daily_cap_usd: 50, created_at: "2026-09-21T10:00:00Z" }],
+  usage: { days: [3.1,5.4,2.2,6.8,4.4,1.9,7.2,5.5,3.3,6.1,4.9,2.7,5.8,4.2].map((v, i) => ({ spent_usd: v })), tasks: 214, failed: 6,
+    recent: [["running","seedance-2.5",1.95,"2026-10-07T11:58:00Z"],["succeeded","gpt-image-2.5",0.06,"2026-10-07T11:51:00Z"],["succeeded","claude-opus-5-5",0.012,"2026-10-07T11:44:00Z"],["failed","veo-3.1",0,"2026-10-07T11:37:00Z"],["succeeded","suno-v6",0.08,"2026-10-07T11:30:00Z"]]
+      .map(([status, model, cost_usd, created_at], i) => ({ id: "task_sample" + i, status, model, cost_usd, created_at })) },
+};
 
-function overview(){
-  $("#hello").textContent = sample ? "Overview" : "Welcome, " + acct.email.split("@")[0];
+function overview(u){
+  $("#hello").textContent = sample ? "Overview" : "Welcome, " + me.email.split("@")[0];
+  const days = u.days.map(d => d.spent_usd);
   const spent = days.reduce((a, b) => a + b, 0), saved = MODELS.reduce((a, m) => a + pct(m), 0) / MODELS.length;
-  $("#k-bal").textContent = usd(acct.credits);
+  $("#k-bal").textContent = usd(me.balance_usd);
   $("#k-spent").textContent = usd(spent);
-  $("#k-saved").textContent = `≈ ${usd(spent / (1 - saved / 100) - spent)} less than official prices`;
-  const n = sample ? 214 : recent.length, failed = recent.filter(r => r.st === "failed").length;
-  $("#k-tasks").textContent = n;
-  $("#k-failed").textContent = `${failed} failed, refunded automatically`;
+  $("#k-saved").textContent = spent ? `≈ ${usd(spent / (1 - saved / 100) - spent)} less than official prices` : "Run a task to see your savings";
+  $("#k-tasks").textContent = u.tasks;
+  $("#k-failed").textContent = `${u.failed} failed, refunded automatically`;
   const W = 700, H = 200, pad = 28, max = Math.max(...days) * 1.15 || 1, bw = (W - pad) / days.length;
   const ticks = [0, max / 2, max].map(v => `<line x1="${pad}" x2="${W}" y1="${H - 20 - (v / max) * (H - 40)}" y2="${H - 20 - (v / max) * (H - 40)}" stroke="var(--line)"/><text x="0" y="${H - 16 - (v / max) * (H - 40)}" fill="var(--muted)" font-size="11" font-family="IBM Plex Mono, monospace">${v.toFixed(v < 1 ? 2 : 0)}</text>`).join("");
   const bars = days.map((v, i) => { const h = (v / max) * (H - 40); return `<rect x="${pad + i * bw + 4}" y="${H - 20 - h}" width="${bw - 8}" height="${h}" rx="3" fill="${i === days.length - 1 ? "var(--brass)" : "var(--ink)"}" opacity="${i === days.length - 1 ? 1 : .8}"><title>$${v.toFixed(2)}</title></rect>`; }).join("");
   const labels = days.map((_, i) => i % 2 ? "" : `<text x="${pad + i * bw + bw / 2}" y="${H - 4}" text-anchor="middle" fill="var(--muted)" font-size="11" font-family="IBM Plex Mono, monospace">${i === 13 ? "today" : "-" + (13 - i) + "d"}</text>`).join("");
   $("#chart").innerHTML = ticks + bars + labels;
-  $("#tasks").innerHTML = recent.map(r => `<tr><td class="mono small">${r.id}</td><td>${esc(r.m.name)}</td><td><span class="status-pill ${r.st}">${r.st === "done" ? "succeeded" : r.st}</span></td><td class="r">${r.st === "failed" ? "$0 refunded" : usd(r.cost)}</td><td class="r muted small">${r.when}</td></tr>`).join("");
+  $("#tasks").innerHTML = u.recent.length ? u.recent.map(r => { const m = modelById(r.model);
+    const out = r.result?.url ? ` <a class="small" href="${esc(r.result.url)}" target="_blank" rel="noopener">output</a>` : "";
+    return `<tr><td class="mono small">${esc(r.id)}${out}</td><td>${esc(m ? m.name : r.model)}</td><td><span class="status-pill ${r.status === "succeeded" ? "done" : esc(r.status)}">${esc(r.status)}</span></td><td class="r">${r.status === "failed" ? "$0 refunded" : usd(r.cost_usd)}</td><td class="r muted small">${ago(r.created_at)}</td></tr>`; }).join("")
+    : `<tr><td colspan="5" class="muted">No tasks yet. <a href="playground.html">Try the playground</a> or send your first API request.</td></tr>`;
 }
 
 function keys(){
-  $("#keys").innerHTML = acct.keys.length ? acct.keys.map((k, i) => `<tr><td>${esc(k.name)}</td><td class="keyval">${k.fresh ? esc(k.key) : esc(k.key.slice(0, 12)) + "••••" + esc(k.key.slice(-4))}</td><td class="r">${usd(+k.cap)}</td><td class="small muted">${k.created}</td><td class="r"><button class="filter" data-revoke="${i}" type="button">Revoke</button></td></tr>`).join("")
-    : `<tr><td colspan="5" class="muted">No keys yet. Create one above.</td></tr>`;
-  acct.keys.forEach(k => delete k.fresh);
+  const fresh = freshKey ? `<tr><td colspan="5"><div class="demo-note small">Your new key. Copy it now; it won't be shown again.<div class="row" style="margin-top:8px;gap:8px"><code class="keyval" id="fresh-key">${esc(freshKey)}</code><button class="filter" type="button" data-copy="#fresh-key">Copy</button></div></div></td></tr>` : "";
+  $("#keys").innerHTML = fresh + (keyList.length ? keyList.map(k => `<tr><td>${esc(k.name)}</td><td class="keyval">${esc(k.preview)}</td><td class="r">${usd(k.daily_cap_usd)}</td><td class="small muted">${esc(k.created_at.slice(0, 10))}</td><td class="r"><button class="filter" data-revoke="${esc(k.id)}" type="button">Revoke</button></td></tr>`).join("")
+    : `<tr><td colspan="5" class="muted">No keys yet. Create one above.</td></tr>`);
 }
-$("#new-key").addEventListener("submit", e => {
+$("#new-key").addEventListener("submit", async e => {
   e.preventDefault();
   if (sample) return toast("Create an account to make keys");
-  const c = "abcdefghijkmnpqrstuvwxyz23456789"; let key = "et_live_"; for (let i = 0; i < 32; i++) key += c[Math.floor(Math.random() * c.length)];
-  acct.keys.unshift({ name: $("#kname").value.trim(), key, cap: +$("#kcap").value, created: new Date().toISOString().slice(0, 10), fresh: true });
-  keys(); save(); $("#kname").value = ""; toast("Key created. Copy it now.");
+  try {
+    const r = await api("/keys", { name: $("#kname").value.trim(), daily_cap_usd: +$("#kcap").value });
+    freshKey = r.key; keyList = (await api("/keys")).keys; keys(); $("#kname").value = ""; toast("Key created. Copy it now.");
+  } catch (err) { toast(err.message); }
 });
-$("#keys").addEventListener("click", e => {
+$("#keys").addEventListener("click", async e => {
   const b = e.target.closest("[data-revoke]"); if (!b) return;
   if (sample) return toast("Create an account to manage keys");
   if (b.dataset.confirm !== "1") { b.dataset.confirm = "1"; b.textContent = "Confirm revoke"; return; }
-  acct.keys.splice(+b.dataset.revoke, 1); keys(); save(); toast("Key revoked");
+  try { await api("/keys/" + b.dataset.revoke, null, "DELETE"); keyList = keyList.filter(k => k.id !== b.dataset.revoke); keys(); toast("Key revoked"); }
+  catch (err) { toast(err.message); }
 });
 
-const TOPUPS = [[10,""],[50,""],[200,""],[500,"+5% bonus"],];
+const TOPUPS = [[10,""],[50,""],[200,""],[500,"+5% bonus"]];
 let pick = 50;
 function billing(){
-  $("#b-bal").textContent = usd(acct.credits);
+  $("#b-bal").textContent = usd(me.balance_usd);
   $("#topups").innerHTML = TOPUPS.map(([v, b]) => `<button class="topup" type="button" aria-pressed="${v === pick}" data-v="${v}"><b>$${v}</b><span>${b || "&nbsp;"}</span></button>`).join("");
 }
 $("#topups").addEventListener("click", e => { const b = e.target.closest("[data-v]"); if (!b) return; pick = +b.dataset.v; billing(); });
-$("#pay").addEventListener("click", () => toast(`Checkout for $${pick} isn't connected yet`));
+$("#pay").addEventListener("click", async () => {
+  if (sample) return toast("Create an account to add credits");
+  $("#pay").disabled = true;
+  try { location.href = (await api("/billing/checkout", { amount_usd: pick })).url; }
+  catch (err) { toast(err.message); $("#pay").disabled = false; }
+});
 
-$("#s-email").value = acct.email;
-$("#s-secret").value = acct.keys[0] ? "whsec_" + acct.keys[0].key.slice(-16) : "Create a key to get a webhook secret";
-$("#logout").addEventListener("click", () => { Account.clear(); location.href = "index.html"; });
-
+$("#logout").addEventListener("click", async () => { try { await api("/logout", {}); } catch {} Account.clear(); location.href = "index.html"; });
 $("#side").addEventListener("click", e => {
   const b = e.target.closest("[data-tab]"); if (!b) return;
   document.querySelectorAll("#side [data-tab]").forEach(x => x.setAttribute("aria-selected", x === b));
   document.querySelectorAll("[data-panel]").forEach(p => p.hidden = p.dataset.panel !== b.dataset.tab);
   history.replaceState(null, "", "#" + b.dataset.tab);
 });
-const start = location.hash.slice(1); if (start) $(`#side [data-tab="${start}"]`)?.click();
-overview(); keys(); billing();
+
+(async () => {
+  let usage;
+  try {
+    me = (await api("/me")).user;
+    if (me) { Account.set(me); [keyList, usage] = await Promise.all([api("/keys").then(r => r.keys), api("/usage")]); }
+  } catch { me = null; }
+  if (!me) { sample = true; Account.clear(); me = SAMPLE.user; keyList = SAMPLE.keys; usage = SAMPLE.usage; $("#sample-note").hidden = false; }
+  try { freshKey = sessionStorage.getItem("et_new_key"); sessionStorage.removeItem("et_new_key"); } catch {}
+  $("#s-email").value = me.email;
+  $("#s-secret").value = me.webhook_secret;
+  overview(usage); keys(); billing();
+  const start = location.hash.slice(1).split("?")[0]; if (start) $(`#side [data-tab="${start}"]`)?.click();
+  if (location.hash.includes("paid=1")) toast("Payment received. Credits appear within a minute.");
+})();
 </script>
 </body>
 </html>

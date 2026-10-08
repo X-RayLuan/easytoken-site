@@ -9,3 +9,7 @@ node_modules
 package.json
 package-lock.json
 .gitignore
+worker
+migrations
+tests
+.dev.vars

@@ -36,15 +36,21 @@
 <script src="assets/data.js"></script>
 <script src="assets/site.js"></script>
 <script>
-function newKey(){ const c = "abcdefghijkmnpqrstuvwxyz23456789"; let s = "et_live_"; for (let i = 0; i < 32; i++) s += c[Math.floor(Math.random() * c.length)]; return s; }
-$("#f").addEventListener("submit", e => {
+$("#f").addEventListener("submit", async e => {
   e.preventDefault();
-  const email = $("#email").value.trim(), pw = $("#pw").value;
+  const email = $("#email").value.trim(), pw = $("#pw").value, btn = $("button[type=submit]", e.target);
   if (!/^\S+@\S+\.\S+$/.test(email)) return $("#err").textContent = "Enter a valid email address.";
   if (pw.length < 8) return $("#err").textContent = "Use at least 8 characters for your password.";
-  Account.set({ email, use: $("#use").value, credits: 1.00, created: new Date().toISOString(),
-    keys: [{ name: "Default key", key: newKey(), cap: 10, created: new Date().toISOString().slice(0,10) }] });
-  location.href = "dashboard.html";
+  btn.disabled = true; $("#err").textContent = "";
+  try {
+    const r = await api("/signup", { email, password: pw, use_case: $("#use").value });
+    Account.set({ email });
+    try { sessionStorage.setItem("et_new_key", r.key); } catch {}
+    location.href = "dashboard.html#keys";
+  } catch (err) {
+    $("#err").innerHTML = err.code === "email_taken" ? `${esc(err.message.replace(" Log in instead.", ""))} <a href="login.html">Log in</a>.` : esc(err.message);
+    btn.disabled = false;
+  }
 });
 </script>
 </body>
