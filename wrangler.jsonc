@@ -16,7 +16,7 @@
     { "pattern": "api.easytoken.si", "custom_domain": true }
   ],
   "d1_databases": [
-    { "binding": "DB", "database_name": "easytoken", "database_id": "REPLACE_WITH_D1_ID", "migrations_dir": "migrations" }
+    { "binding": "DB", "database_name": "easytoken", "database_id": "e1c4cb46-5cd2-4ead-9bce-5a0d58371626", "migrations_dir": "migrations" }
   ],
   // Poll open tasks and retry customer webhooks.
   "triggers": { "crons": ["* * * * *"] },
