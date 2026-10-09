@@ -59,6 +59,7 @@ const MEDIA = [
   { id: "veo-3.1", cat: "video", per: "video (8s)",
     kie: { "quality-720p": 1.25, "quality-1080p": 1.275, "quality-4k": 1.85, "fast-720p": 0.30, "fast-1080p": 0.325, "fast-4k": 0.90, "lite-720p": 0.15, "lite-1080p": 0.175, "lite-4k": 0.75 },
     build: i => {
+      if (i.duration != null && Number(i.duration) !== 8) fail(422, "invalid_input", "input.duration must be 8: Veo 3.1 videos are 8 seconds.");
       const mode = oneOf(i.mode, "mode", ["quality", "fast", "lite"], "quality"), res = oneOf(i.resolution, "resolution", ["720p", "1080p", "4k"], "1080p"), im = imgs(i, 2);
       return job("veo-3-1", { prompt: prompt(i, 5000), model: { quality: "veo3", fast: "veo3_fast", lite: "veo3_lite" }[mode], resolution: res, duration: 8,
         aspect_ratio: ar(i.aspect_ratio, ["16:9", "9:16", "Auto"], "16:9"),
@@ -111,9 +112,12 @@ const MEDIA = [
       return im ? job("wan/2-7-image-to-video", { ...common, first_frame_url: im[0], last_frame_url: im[1] }, [res, d])
         : job("wan/2-7-text-to-video", { ...common, ratio: ar(i.aspect_ratio, ["16:9", "9:16", "1:1", "4:3", "3:4"], "16:9") }, [res, d]); } },
   { id: "wan-2.6", cat: "video", per: "video",
-    kie: { "720p-5s": 0.35, "720p-10s": 0.70, "720p-15s": 1.05, "1080p-5s": 0.5225, "1080p-10s": 1.0475, "1080p-15s": 1.575, "i2v-1080p-10s": 1.05 },
+    // Image-to-video has its own kie price per resolution × duration; it is never billed at the text-to-video price.
+    kie: { "720p-5s": 0.35, "720p-10s": 0.70, "720p-15s": 1.05, "1080p-5s": 0.5225, "1080p-10s": 1.0475, "1080p-15s": 1.575,
+      "i2v-720p-5s": 0.35, "i2v-720p-10s": 0.70, "i2v-720p-15s": 1.05, "i2v-1080p-5s": 0.5225, "i2v-1080p-10s": 1.05, "i2v-1080p-15s": 1.575 },
     build: i => { const im = imgs(i, 1), res = oneOf(i.resolution, "resolution", ["720p", "1080p"], "1080p"), d = oneOf(i.duration == null ? null : String(i.duration), "duration", ["5", "10", "15"], "5");
-      const tier = im && res === "1080p" && d === "10" ? "i2v-1080p-10s" : `${res}-${d}s`;
+      if (i.aspect_ratio != null) fail(422, "invalid_input", "input.aspect_ratio is not supported by Wan 2.6.");
+      const tier = `${im ? "i2v-" : ""}${res}-${d}s`;
       return job(im ? "wan/2-6-image-to-video" : "wan/2-6-text-to-video", { prompt: prompt(i, 5000), duration: d, resolution: res, multi_shots: false, ...(im ? { image_urls: im } : {}) }, [tier, 1]); } },
   { id: "hailuo-2.3", cat: "video", per: "video",
     kie: { "pro-768p-6s": 0.225, "pro-768p-10s": 0.45, "pro-1080p-6s": 0.40, "standard-768p-6s": 0.15, "standard-768p-10s": 0.25, "standard-1080p-6s": 0.25 },
@@ -129,10 +133,14 @@ const MEDIA = [
       return im ? job("minimax-h3/image-to-video", { ...common, first_frame_url: im[0], last_frame_url: im[1] }, [res, d], ["input-image", im.length])
         : job("minimax-h3/text-to-video", { ...common, aspect_ratio: ar(i.aspect_ratio, ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], "16:9") }, [res, d]); } },
   { id: "grok-imagine-video", cat: "video", per: "second",
-    kie: { "480p": 0.012, "720p": 0.0225, "1080p": 0.04 },
+    kie: { "480p": 0.012, "720p": 0.0225, "1080p": 0.04, "i2v-480p": 0.012, "i2v-720p": 0.0225, "i2v-1080p": 0.04 },
+    // Image-to-video takes up to 7 images, but only 1 at 1080p. With a single image kie ignores aspect_ratio (the video follows the image).
     build: i => { const im = imgs(i, 7), res = oneOf(i.resolution, "resolution", ["480p", "720p", "1080p"], "720p"), d = int(i.duration, "duration", 6, 30, 6);
-      const common = { mode: oneOf(i.mode, "mode", ["normal", "fun"], "normal"), resolution: res, aspect_ratio: ar(i.aspect_ratio, ["16:9", "9:16", "1:1", "2:3", "3:2"], "16:9") };
-      return im ? job("grok-imagine/image-to-video", { ...common, prompt: optStr(i.prompt, "prompt", 5000), image_urls: im, duration: String(d) }, [res, d])
+      if (im && res === "1080p" && im.length > 1) fail(422, "invalid_input", "input.image_urls: 1080p image-to-video accepts only 1 image; use 480p or 720p for up to 7.");
+      if (im && im.length === 1 && i.aspect_ratio != null) fail(422, "invalid_input", "input.aspect_ratio only applies with 2 or more images; with 1 image the video follows the image's shape.");
+      const common = { mode: oneOf(i.mode, "mode", ["normal", "fun"], "normal"), resolution: res,
+        aspect_ratio: im?.length === 1 ? undefined : ar(i.aspect_ratio, ["16:9", "9:16", "1:1", "2:3", "3:2"], "16:9") };
+      return im ? job("grok-imagine/image-to-video", { ...common, prompt: optStr(i.prompt, "prompt", 5000), image_urls: im, duration: String(d) }, [`i2v-${res}`, d])
         : job("grok-imagine/text-to-video", { ...common, prompt: prompt(i, 5000), duration: d }, [res, d]); } },
   { id: "pixverse-v6", cat: "video", per: "second",
     kie: { "360p": 0.02, "360p-audio": 0.028, "540p": 0.028, "540p-audio": 0.036, "720p": 0.036, "720p-audio": 0.048, "1080p": 0.072, "1080p-audio": 0.092 },
@@ -287,7 +295,8 @@ export function quote(model, input) {
   let micros = 0;
   for (const [tier, qty] of charges) {
     const t = model.tiers[tier];
-    if (!t) throw new Error(`${model.id}: no price for tier ${tier}`);
+    // Never fall back to another option's price: an option we have no verified kie price for is refused before any charge.
+    if (!t) fail(422, "unsupported_option", `${model.id}: this combination of options (${tier}) is not available.`);
     micros += t.micros * qty;
   }
   return { up, charges, micros };

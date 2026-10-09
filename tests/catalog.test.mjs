@@ -59,7 +59,8 @@ test("price follows resolution, duration, mode and audio", () => {
   near(usd("veo-3.1", { prompt: "x", mode: "fast", resolution: "720p" }), 0.345);
   near(usd("veo-3.1", { prompt: "x", mode: "lite", resolution: "4k" }), 0.8625);
   assert.equal(quote(mediaModel("veo-3.1"), { prompt: "x", mode: "fast", resolution: "4k" }).up("").input.model, "veo3_fast");
-  assert.equal(quote(mediaModel("veo-3.1"), { prompt: "x", duration: 4 }).up("").input.duration, 8, "veo duration stays pinned to the priced 8s");
+  assert.equal(quote(mediaModel("veo-3.1"), { prompt: "x", duration: 8 }).up("").input.duration, 8);
+  assert.throws(() => quote(mediaModel("veo-3.1"), { prompt: "x", duration: 4 }), e => e.status === 422 && /duration must be 8/.test(e.message), "veo refuses durations it would not deliver");
   // seedance: per second × duration
   near(usd("seedance-2.5", { prompt: "x", resolution: "1080p", duration: 10 }), 0.9085 * 10);
   near(usd("seedance-2", { prompt: "x", resolution: "4k", duration: 4 }), 1.196 * 4);
@@ -97,4 +98,48 @@ test("inputs that would be billed differently than quoted are refused", () => {
 test("audio models keep their fixed prices", () => {
   assert.equal(usd("suno-v6", { prompt: "x" }), 0.08);
   assert.equal(usd("elevenlabs-v3", { text: "hi" }), 0.18);
+});
+
+const IMG = n => Array.from({ length: n }, (_, k) => `https://a.test/${k}.png`);
+
+test("wan 2.6 image-to-video is billed at kie's image-to-video price for every resolution × duration", () => {
+  const i2v = { "720p-5": 0.35, "720p-10": 0.70, "720p-15": 1.05, "1080p-5": 0.5225, "1080p-10": 1.05, "1080p-15": 1.575 };
+  for (const [k, kie] of Object.entries(i2v)) {
+    const [resolution, duration] = k.split("-"), q = quote(mediaModel("wan-2.6"), { prompt: "xx", resolution, duration, image_urls: IMG(1) });
+    assert.deepEqual(q.charges, [[`i2v-${resolution}-${duration}s`, 1]], k);
+    assert.equal(q.micros, saleMicros(kie), k);
+    assert.equal(q.up("").model, "wan/2-6-image-to-video", k);
+  }
+  // 1080p 10s: image-to-video ($1.05) is not the text-to-video price ($1.0475)
+  assert.notEqual(usd("wan-2.6", { prompt: "xx", resolution: "1080p", duration: 10, image_urls: IMG(1) }), usd("wan-2.6", { prompt: "xx", resolution: "1080p", duration: 10 }));
+  assert.equal(quote(mediaModel("wan-2.6"), { prompt: "xx" }).up("").model, "wan/2-6-text-to-video");
+});
+
+test("wan 2.6 accepts exactly one input image and no aspect_ratio", () => {
+  assert.throws(() => quote(mediaModel("wan-2.6"), { prompt: "xx", image_urls: IMG(2) }), e => e.status === 422 && /image_urls/.test(e.message));
+  assert.throws(() => quote(mediaModel("wan-2.6"), { prompt: "xx", aspect_ratio: "9:16" }), e => e.status === 422 && /aspect_ratio/.test(e.message));
+});
+
+test("an option combination with no registered kie price is a 422, never a fallback price", () => {
+  const m = mediaModel("wan-2.6"), saved = m.tiers["i2v-720p-15s"];
+  delete m.tiers["i2v-720p-15s"];
+  try {
+    assert.throws(() => quote(m, { prompt: "xx", resolution: "720p", duration: 15, image_urls: IMG(1) }), e => e.status === 422 && e.code === "unsupported_option");
+  } finally { m.tiers["i2v-720p-15s"] = saved; }
+});
+
+test("grok imagine image-to-video: 1 image at 1080p, up to 7 at 480p/720p, billed at the image-to-video price", () => {
+  const g = input => quote(mediaModel("grok-imagine-video"), input);
+  assert.throws(() => g({ resolution: "1080p", image_urls: IMG(2) }), e => e.status === 422 && /1080p/.test(e.message));
+  near(g({ resolution: "1080p", duration: 10, image_urls: IMG(1) }).micros / 1e6, 0.046 * 10);
+  assert.deepEqual(g({ resolution: "1080p", duration: 10, image_urls: IMG(1) }).charges, [["i2v-1080p", 10]]);
+  for (const resolution of ["480p", "720p"]) {
+    assert.equal(g({ resolution, image_urls: IMG(7) }).up("").input.image_urls.length, 7);
+    assert.throws(() => g({ resolution, image_urls: IMG(8) }), e => e.status === 422 && /image_urls/.test(e.message));
+  }
+  // one image: kie ignores aspect_ratio, so it is not sent and an explicit one is refused
+  assert.equal(g({ image_urls: IMG(1) }).up("").input.aspect_ratio, undefined);
+  assert.throws(() => g({ image_urls: IMG(1), aspect_ratio: "9:16" }), e => e.status === 422 && /aspect_ratio/.test(e.message));
+  assert.equal(g({ image_urls: IMG(3), aspect_ratio: "9:16" }).up("").input.aspect_ratio, "9:16");
+  assert.throws(() => g({ image_urls: IMG(1), mode: "spicy" }), /mode/);
 });

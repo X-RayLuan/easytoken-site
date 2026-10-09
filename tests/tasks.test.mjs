@@ -65,6 +65,23 @@ test("bad input is rejected before anything is charged or sent", async () => {
   assert.equal((await user()).balance, 10000000);
 });
 
+test("grok imagine 1080p with several images and unpriced wan 2.6 combos are refused before any charge", async () => {
+  await assert.rejects(run("grok-imagine-video", { prompt: "x", resolution: "1080p", image_urls: ["https://a.test/1.png", "https://a.test/2.png"] }), e => e.status === 422);
+  await assert.rejects(run("wan-2.6", { prompt: "xx", image_urls: ["https://a.test/1.png", "https://a.test/2.png"] }), e => e.status === 422);
+  await assert.rejects(run("veo-3.1", { prompt: "x", duration: 6 }), e => e.status === 422);
+  assert.equal(calls.length, 0);
+  assert.equal((await user()).balance, 10000000);
+  const res = await worker.fetch(new Request("https://api.easytoken.si/v1/quote", { method: "POST", body: JSON.stringify({ model: "grok-imagine-video", input: { resolution: "1080p", image_urls: ["https://a.test/1.png", "https://a.test/2.png"] } }) }), env, ctx);
+  assert.equal(res.status, 422);
+});
+
+test("wan 2.6 image-to-video charges the image-to-video price", async () => {
+  const t = await run("wan-2.6", { prompt: "xx", resolution: "720p", duration: 15, image_urls: ["https://a.test/1.png"] });
+  assert.equal(calls[0].body.model, "wan/2-6-image-to-video");
+  assert.deepEqual(calls[0].body.input.image_urls, ["https://a.test/1.png"]);
+  assert.equal(t.cost, 1207500);
+});
+
 test("insufficient balance is refused with the exact price", async () => {
   await env.DB.prepare("UPDATE users SET balance = 1000 WHERE id = 'u1'").run();
   await assert.rejects(run("veo-3.1", { prompt: "x", mode: "fast", resolution: "4k" }), e => e.status === 402 && /costs \$1\.035 /.test(e.message));
