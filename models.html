@@ -29,6 +29,9 @@
 <script src="assets/site.js"></script>
 <script>
 let filter = new URLSearchParams(location.search).get("cat") || "all";
+// Per-option prices (resolution, duration, mode…) come from the live API; the cards still render without them.
+let PRICING = {};
+fetch("/v1/models").then(r => r.json()).then(d => { for (const m of d.data) if (m.pricing) PRICING[m.id] = m.pricing; render(); }).catch(() => {});
 function render(){
   const q = $("#q").value.trim().toLowerCase();
   $("#filters").innerHTML = [["all","All"], ...CATS].map(([k,l]) => `<button class="filter" aria-pressed="${k===filter}" data-f="${k}">${l}</button>`).join("");
@@ -36,8 +39,9 @@ function render(){
   $("#cards").innerHTML = list.length ? list.map(m => `<article class="mcard">
     <header><div><h3>${esc(m.name)}</h3><div class="prov">${esc(m.provider)}</div></div><span class="badge">${m.cat}</span></header>
     <p>${esc(m.blurb)}</p>
-    <div class="price"><b>${usd(m.ours)}</b><s>${usd(m.official)}</s><span class="pill">−${pct(m)}%</span></div>
+    <div class="price"><b>${usd(m.ours)}</b>${m.official ? `<s>${usd(m.official)}</s>` : ""}${savePill(m)}</div>
     <div class="meta"><span>per ${esc(m.unit)}</span><span class="mono">${esc(m.id)}</span></div>
+    ${PRICING[m.id] ? `<details class="small"><summary>All prices</summary><table class="small">${PRICING[m.id].map(p => `<tr><td>${esc(p.option)}</td><td class="r">${usd(p.usd)} / ${esc(p.per)}</td></tr>`).join("")}</table></details>` : ""}
     <div class="actions"><a class="btn btn-primary" href="playground.html?model=${m.id}">Try it</a><a class="btn btn-ghost" href="docs.html#${m.chat ? "chat" : "tasks"}">API reference</a></div>
   </article>`).join("") : `<div class="empty surface">No models match “${esc(q)}”.</div>`;
 }
