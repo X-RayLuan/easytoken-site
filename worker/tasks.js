@@ -1,6 +1,6 @@
 // Media tasks: reserve credits, submit to kie.ai, track status, refund failures, deliver webhooks.
-import { fail, json, newId, nowIso, hmac, safeEqual, toMicros, toUsd, safeCallbackUrl } from "./util.js";
-import { mediaModel } from "./catalog.js";
+import { fail, json, newId, nowIso, hmac, safeEqual, toUsd, safeCallbackUrl } from "./util.js";
+import { mediaModel, quote } from "./catalog.js";
 import { submitUpstream, pollUpstream } from "./kie.js";
 
 const OPEN = ["queued", "running"];
@@ -45,8 +45,8 @@ export async function createTask(env, ctx, { user, keyId, body, origin }) {
     if (typeof body.metadata !== "object" || metadata.length > 4096) fail(422, "invalid_input", "metadata must be an object under 4 KB.");
   }
   const id = newId("task");
-  const upstream = model.build(input)(`${origin}/api/upstream/kie?task=${id}&sig=${await hmac(env.INTERNAL_SECRET, id)}`); // throws 422 on bad input
-  const cost = toMicros(model.price);
+  const { up, micros: cost } = quote(model, input); // throws 422 on bad input; price depends on resolution, duration, etc.
+  const upstream = up(`${origin}/api/upstream/kie?task=${id}&sig=${await hmac(env.INTERNAL_SECRET, id)}`);
 
   const running = await env.DB.prepare("SELECT COUNT(*) AS n FROM tasks WHERE user_id = ? AND model = ? AND status IN ('queued','running')").bind(user.id, model.id).first();
   if (running.n >= MAX_RUNNING_PER_MODEL) fail(429, "rate_limited", `You already have ${MAX_RUNNING_PER_MODEL} ${model.id} tasks running. Wait for one to finish.`, { "retry-after": "15" });
@@ -54,7 +54,7 @@ export async function createTask(env, ctx, { user, keyId, body, origin }) {
     const key = await env.DB.prepare("SELECT daily_cap FROM api_keys WHERE id = ?").bind(keyId).first();
     if ((await keySpentToday(env, keyId)) + cost > key.daily_cap) fail(402, "spend_cap_reached", "This key has reached its daily spend cap. Raise it in the dashboard or wait until 00:00 UTC.");
   }
-  if (!(await debit(env, user.id, cost, "task:" + id))) fail(402, "insufficient_credits", `This task costs ${"$" + model.price.toFixed(2)} and your balance is ${"$" + toUsd(user.balance).toFixed(2)}. Top up in the dashboard.`);
+  if (!(await debit(env, user.id, cost, "task:" + id))) fail(402, "insufficient_credits", `This task costs $${toUsd(cost)} and your balance is ${"$" + toUsd(user.balance).toFixed(2)}. Top up in the dashboard.`);
 
   await env.DB.prepare("INSERT INTO tasks (id, user_id, key_id, model, kind, status, cost, input_json, metadata_json, callback_url, polled_at) VALUES (?, ?, ?, ?, 'media', 'queued', ?, ?, ?, ?, ?)")
     .bind(id, user.id, keyId, model.id, cost, JSON.stringify(input), metadata, callbackUrl, nowIso()).run();

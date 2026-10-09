@@ -55,7 +55,7 @@
       <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
       <tbody>
         <tr><td><code>model</code></td><td>string</td><td>Model ID, e.g. <code>veo-3.1</code>. See <a href="#models">Model IDs</a>.</td></tr>
-        <tr><td><code>input</code></td><td>object</td><td>Model-specific input. Every model accepts <code>prompt</code> (ElevenLabs also takes <code>text</code> and <code>voice</code>). Video and image models accept <code>aspect_ratio</code> and <code>image_urls</code> (https links) for image-to-video or editing. Suno accepts <code>style</code>, <code>lyrics</code>, <code>title</code> and <code>instrumental</code>.</td></tr>
+        <tr><td><code>input</code></td><td>object</td><td>Model-specific input. Every model accepts <code>prompt</code> (ElevenLabs also takes <code>text</code> and <code>voice</code>). Video and image models accept <code>aspect_ratio</code> and <code>image_urls</code> (https links) for image-to-video or editing. Price-setting options are <code>resolution</code> (e.g. <code>720p</code>, <code>1080p</code>, <code>4k</code>; images <code>1K</code>/<code>2K</code>/<code>4K</code>), <code>duration</code> in seconds, <code>mode</code> (Veo <code>quality</code>/<code>fast</code>/<code>lite</code>, Kling 3.0 <code>std</code>/<code>pro</code>/<code>4K</code>, Hailuo <code>standard</code>/<code>pro</code>, Imagen <code>fast</code>/<code>standard</code>/<code>ultra</code>) and audio (<code>sound</code> or <code>generate_audio</code>). Suno accepts <code>style</code>, <code>lyrics</code>, <code>title</code> and <code>instrumental</code>.</td></tr>
         <tr><td><code>callback_url</code></td><td>string</td><td>Optional public https URL. We POST the finished task here.</td></tr>
         <tr><td><code>metadata</code></td><td>object</td><td>Optional. Returned unchanged, useful for your own IDs.</td></tr>
       </tbody></table></div>
@@ -64,7 +64,7 @@
   "id": <span class="s">"task_8f2kq1x"</span>,
   "model": <span class="m">"seedance-2.5"</span>,
   "status": <span class="s">"queued"</span>,
-  "cost_usd": 1.95,
+  "cost_usd": 1.81125,
   "created_at": <span class="s">"2026-10-07T12:00:00Z"</span>
 }</pre></div>
 
@@ -75,7 +75,7 @@
   "id": <span class="s">"task_8f2kq1x"</span>,
   "status": <span class="s">"succeeded"</span>,
   "result": { "url": <span class="s">"https://…/output.mp4"</span>, "urls": [<span class="s">"https://…/output.mp4"</span>], "type": <span class="s">"video"</span> },
-  "cost_usd": 1.95
+  "cost_usd": 1.81125
 }</pre></div>
 
     <h2 id="chat">Chat completions</h2>
@@ -97,7 +97,7 @@
     <p>When you pass <code>callback_url</code>, we send the same body as <a href="#get-task">Get a task</a> once the task finishes. Each request carries an <code>X-EasyToken-Signature</code> header: an HMAC-SHA256 of the raw body with your webhook secret. Reply with any 2xx within 10 seconds; we retry up to 5 times with backoff.</p>
 
     <h2 id="models">Model IDs</h2>
-    <p><code>GET /v1/models</code> returns this list as JSON with prices; <code>GET /v1/balance</code> returns your credit balance.</p>
+    <p><code>GET /v1/models</code> returns this list as JSON with the price of every option (resolution, duration, mode, audio); <code>GET /v1/balance</code> returns your credit balance. The price below is for each model's default options.</p>
     <div class="table-box"><table><thead><tr><th>Model ID</th><th>Type</th><th>Endpoint</th><th class="r">Price</th></tr></thead><tbody id="model-rows"></tbody></table></div>
 
     <h2 id="errors">Errors</h2>
@@ -116,7 +116,7 @@
     <p>New accounts can run 10 media tasks at once per model and 60 chat requests per minute. Limits rise automatically with usage; contact support if you need more for a launch.</p>
 
     <h2 id="billing">Billing</h2>
-    <p>Usage is paid from prepaid credits. Each task's price is fixed when it is created and shown in <code>cost_usd</code>. Tasks that fail, time out or are blocked by a safety filter are refunded automatically.</p>
+    <p>Usage is paid from prepaid credits. Each task's price depends on the options you pick, is fixed when it is created and shown in <code>cost_usd</code>. To see a price first, <code>POST /v1/quote</code> with the same <code>model</code> and <code>input</code> as a task (no key needed, nothing is charged). Tasks that fail, time out or are blocked by a safety filter are refunded automatically.</p>
   </article>
 </main>
 <div id="site-footer"></div>

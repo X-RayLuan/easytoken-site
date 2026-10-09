@@ -203,9 +203,9 @@ function renderRouter(){
   $("#tabs").innerHTML = CATS.map(([k,l]) => `<button class="tab" role="tab" aria-selected="${k===cat}" data-cat="${k}">${l}</button>`).join("");
   $("#chips").innerHTML = MODELS.filter(m => m.cat === cat).map(m => `<button class="chip" aria-pressed="${m===current}" data-id="${m.id}">${esc(m.name)}</button>`).join("");
   $("#code").innerHTML = snippet(current);
-  $("#m-off").textContent = usd(current.official);
+  $("#m-off").textContent = offUsd(current);
   $("#m-ours").textContent = usd(current.ours);
-  $("#m-save").textContent = pct(current) + "%";
+  $("#m-save").textContent = pct(current) == null ? "–" : pct(current) + "%";
 }
 $("#tabs").addEventListener("click", e => { const b = e.target.closest("[data-cat]"); if (!b) return; cat = b.dataset.cat; current = MODELS.find(m => m.cat === cat); renderRouter(); });
 $("#chips").addEventListener("click", e => { const b = e.target.closest("[data-id]"); if (!b) return; current = modelById(b.dataset.id); renderRouter(); });
@@ -213,8 +213,8 @@ function renderTable(){
   $("#filters").innerHTML = [["all","All models"], ...CATS].map(([k,l]) => `<button class="filter" aria-pressed="${k===filter}" data-f="${k}">${l}</button>`).join("");
   $("#rows").innerHTML = MODELS.filter(m => filter === "all" || m.cat === filter).map(m => `<tr>
     <td><a class="model" href="playground.html?model=${m.id}">${esc(m.name)}</a><span class="cat">${m.cat}</span></td>
-    <td>${esc(m.unit)}</td><td class="r official">${usd(m.official)}</td><td class="r ours">${usd(m.ours)}</td>
-    <td class="r"><span class="pill">−${pct(m)}%</span></td></tr>`).join("");
+    <td>${esc(m.unit)}</td><td class="r official">${offUsd(m)}</td><td class="r ours">${usd(m.ours)}</td>
+    <td class="r">${savePill(m)}</td></tr>`).join("");
 }
 $("#filters").addEventListener("click", e => { const b = e.target.closest("[data-f]"); if (!b) return; filter = b.dataset.f; renderTable(); });
 renderRouter(); renderTable();

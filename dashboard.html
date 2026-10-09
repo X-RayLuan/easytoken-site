@@ -84,7 +84,7 @@ const SAMPLE = {
 function overview(u){
   $("#hello").textContent = sample ? "Overview" : "Welcome, " + me.email.split("@")[0];
   const days = u.days.map(d => d.spent_usd);
-  const spent = days.reduce((a, b) => a + b, 0), saved = MODELS.reduce((a, m) => a + pct(m), 0) / MODELS.length;
+  const spent = days.reduce((a, b) => a + b, 0), compared = MODELS.filter(m => m.official), saved = compared.reduce((a, m) => a + pct(m), 0) / compared.length;
   $("#k-bal").textContent = usd(me.balance_usd);
   $("#k-spent").textContent = usd(spent);
   $("#k-saved").textContent = spent ? `≈ ${usd(spent / (1 - saved / 100) - spent)} less than official prices` : "Run a task to see your savings";

@@ -6,7 +6,7 @@ One Cloudflare Worker serves the static site and the API.
 - `/api/*` — dashboard API, HttpOnly session cookie
 - everything else — static files in this folder
 
-Code: `worker/` (index = router, auth, tasks = media tasks + refunds + webhooks, chat, billing = Stripe, kie = upstream client, catalog = prices + upstream mapping). Schema: `migrations/`. Prices shown on the site live in `assets/data.js` and must match `worker/catalog.js`; `node --test tests/` checks this and runs in CI.
+Code: `worker/` (index = router, auth, tasks = media tasks + refunds + webhooks, chat, billing = Stripe, kie = upstream client, catalog = prices + upstream mapping). Schema: `migrations/`. Media prices are kie.ai's list price × 1.15 (`MARKUP` in `worker/catalog.js`), per model and per option (resolution, duration, mode, audio, input images). Each model's `kie` table is a snapshot of kie.ai/pricing; `node scripts/kie-prices.mjs` compares it with kie's live price list (free, no key) and `--markdown` prints the price table. `POST /v1/quote` returns a task's price without running it. The example prices on the site live in `assets/data.js` and must match `worker/catalog.js`; `node --test tests/*.test.mjs` checks this (and runs the task/billing flow against an in-memory D1 with kie mocked) in CI. Node 24+ (uses `node:sqlite`).
 
 Money is stored in micro-dollars. A task debits the balance when created and is refunded automatically if it fails, never starts, or runs over 2 hours. A cron job runs every minute to poll open tasks and retry customer webhooks.
 

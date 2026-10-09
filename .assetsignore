@@ -13,3 +13,4 @@ worker
 migrations
 tests
 .dev.vars
+scripts

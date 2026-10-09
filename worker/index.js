@@ -4,7 +4,7 @@ import { signup, login, logout, sessionUser, requireSession, requireApiKey, chec
 import { createTask, getTaskRow, refreshTask, publicTask, upstreamCallback, sweep } from "./tasks.js";
 import { chatCompletions } from "./chat.js";
 import { checkout, stripeWebhook } from "./billing.js";
-import { allModels, mediaModel, chatModel, applyChatOverrides } from "./catalog.js";
+import { allModels, mediaModel, chatModel, applyChatOverrides, quote } from "./catalog.js";
 
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, content-type", "access-control-allow-methods": "GET, POST, OPTIONS", "access-control-max-age": "86400" };
 const withCors = res => { const r = new Response(res.body, res); for (const [k, v] of Object.entries(CORS)) r.headers.set(k, v); return r; };
@@ -15,9 +15,20 @@ async function freshTask(env, ctx, t) {
   return t;
 }
 
+// Price of a task without running it: same validation and pricing as POST /v1/tasks, no key needed.
+function priceQuote(body) {
+  const model = mediaModel(body.model);
+  if (!model) fail(404, "model_not_found", `Unknown model '${String(body.model ?? "")}'. See GET /v1/models.`);
+  if (!body.input || typeof body.input !== "object" || Array.isArray(body.input)) fail(422, "invalid_input", "input must be an object, e.g. { \"prompt\": \"…\" }.");
+  const { micros, charges } = quote(model, body.input);
+  return { object: "quote", model: model.id, cost_usd: toUsd(micros),
+    lines: charges.map(([option, qty]) => ({ option, quantity: qty, per: model.tiers[option].per, usd: toUsd(model.tiers[option].micros) })) };
+}
+
 async function v1(request, env, ctx, path) {
   const method = request.method;
   if (path === "/v1/models" && method === "GET") return json({ object: "list", data: allModels() });
+  if (path === "/v1/quote" && method === "POST") return json(priceQuote(await readJson(request)));
   const { user, key } = await requireApiKey(request, env, ctx);
   const origin = env.PUBLIC_ORIGIN || new URL(request.url).origin;
   if (path === "/v1/tasks" && method === "POST") return json(publicTask(await createTask(env, ctx, { user, keyId: key.id, body: await readJson(request), origin })), 202);

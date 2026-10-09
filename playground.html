@@ -61,7 +61,7 @@ function sync(){
   const opts = OPTS[m.cat];
   $("#opt-wrap").hidden = !opts;
   $("#opt").innerHTML = (opts || []).map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
-  $("#c-off").textContent = usd(m.official);
+  $("#c-off").textContent = m.official ? usd(m.official) : "";
   $("#c-ours").textContent = m.chat ? `${usd(m.ours)} / 1M tok` : usd(m.ours);
   $("#code").innerHTML = snippet(m);
   $("#result").textContent = "Your output will appear here.";
