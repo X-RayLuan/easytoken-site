@@ -302,22 +302,9 @@ export function quote(model, input) {
   return { up, charges, micros };
 }
 
-// USD per 1M tokens. `upstream` is the OpenRouter model id; override with CHAT_MODEL_MAP if the provider renames it.
-const CHAT = [
-  { id: "claude-opus-5-5", cat: "chat", input: 4.00, output: 20.00, upstream: "anthropic/claude-opus-5.5" },
-  { id: "gpt-5.5", cat: "chat", input: 1.60, output: 8.00, upstream: "openai/gpt-5.5" },
-  { id: "gemini-3-pro", cat: "chat", input: 1.92, output: 9.60, upstream: "google/gemini-3-pro" },
-];
-
 export const mediaModel = id => MEDIA.find(m => m.id === id) || null;
 export const mediaModels = () => MEDIA;
-export const chatModel = id => CHAT.find(m => m.id === id) || null;
 export const allModels = () => [
   ...MEDIA.map(m => ({ id: m.id, object: "model", type: m.cat, endpoint: "/v1/tasks",
     pricing: Object.entries(m.tiers).map(([option, t]) => ({ option, usd: t.micros / 1e6, per: t.per })) })),
-  ...CHAT.map(m => ({ id: m.id, object: "model", type: "chat", endpoint: "/v1/chat/completions", input_usd_per_1m: m.input, output_usd_per_1m: m.output })),
 ];
-export function applyChatOverrides(env) {
-  if (!env.CHAT_MODEL_MAP) return;
-  try { const map = JSON.parse(env.CHAT_MODEL_MAP); for (const m of CHAT) if (map[m.id]) m.upstream = map[m.id]; } catch {}
-}

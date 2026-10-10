@@ -72,14 +72,8 @@ const MODELS = [
    blurb:"Full songs with vocals from a text prompt or your own lyrics.", input:{prompt:"Upbeat synth-pop jingle about coffee"}},
   {id:"elevenlabs-v3",   name:"ElevenLabs v3",   provider:"ElevenLabs", cat:"audio", unit:"1k characters",     official:0.30,  ours:0.18,  eta:"~3s",
    blurb:"Expressive text-to-speech in 70+ languages.", input:{text:"Welcome to EasyToken.", voice:"Rachel"}},
-  {id:"claude-opus-5-5", name:"Claude Opus 5.5", provider:"Anthropic",  cat:"chat",  unit:"1M output tokens",  official:25.00, ours:20.00, eta:"streaming",
-   blurb:"Frontier reasoning and coding. OpenAI-compatible endpoint.", chat:true},
-  {id:"gpt-5.5",         name:"GPT-5.5",         provider:"OpenAI",     cat:"chat",  unit:"1M output tokens",  official:10.00, ours:8.00,  eta:"streaming",
-   blurb:"General-purpose model with tool calls and JSON mode.", chat:true},
-  {id:"gemini-3-pro",    name:"Gemini 3 Pro",    provider:"Google",     cat:"chat",  unit:"1M output tokens",  official:12.00, ours:9.60,  eta:"streaming",
-   blurb:"Long context and multimodal input for documents and video.", chat:true},
 ];
-const CATS = [["video","Video"],["image","Image"],["audio","Audio"],["chat","Chat"]];
+const CATS = [["video","Video"],["image","Image"],["audio","Audio"]];
 const API_BASE = "https://api.easytoken.si/v1";
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -94,12 +88,6 @@ const modelById = id => MODELS.find(m => m.id === id);
 // Highlighted curl request for a model (used by landing, models and playground pages).
 function snippet(m, key = "$EASYTOKEN_KEY"){
   const S = v => `<span class="s">${esc(JSON.stringify(v))}</span>`;
-  if (m.chat) return `<span class="k">curl</span> ${API_BASE}/chat/completions \\
-  -H <span class="s">"Authorization: Bearer ${esc(key)}"</span> \\
-  -d '{
-    "model": <span class="m">${esc(JSON.stringify(m.id))}</span>,
-    "messages": [{"role": "user", "content": "Hi"}]
-  }'`;
   const inp = Object.entries(m.input).map(([k,v]) => `      ${S(k)}: ${S(v)}`).join(",\n");
   return `<span class="k">curl</span> ${API_BASE}/tasks \\
   -H <span class="s">"Authorization: Bearer ${esc(key)}"</span> \\
