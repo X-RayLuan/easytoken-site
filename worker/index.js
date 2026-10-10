@@ -4,7 +4,7 @@ import { signup, login, logout, sessionUser, requireSession, requireApiKey, chec
 import { createTask, getTaskRow, refreshTask, publicTask, upstreamCallback, sweep } from "./tasks.js";
 import { chatCompletions } from "./chat.js";
 import { checkout, stripeWebhook } from "./billing.js";
-import { allModels, mediaModel, chatModel, applyChatOverrides, quote } from "./catalog.js";
+import { allModels, mediaModel, chatModel, quote } from "./catalog.js";
 
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, content-type", "access-control-allow-methods": "GET, POST, OPTIONS", "access-control-max-age": "86400" };
 const withCors = res => { const r = new Response(res.body, res); for (const [k, v] of Object.entries(CORS)) r.headers.set(k, v); return r; };
@@ -104,7 +104,6 @@ async function api(request, env, ctx, path) {
 
 export default {
   async fetch(request, env, ctx) {
-    applyChatOverrides(env);
     const url = new URL(request.url);
     const apiHost = url.hostname.startsWith("api.");
     let path = url.pathname.replace(/\/+$/, "") || "/";

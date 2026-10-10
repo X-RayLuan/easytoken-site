@@ -56,8 +56,7 @@ export const SOURCE = {
 };
 export const CHAT_SOURCE = {
   "claude-opus-5-5": { input: "claude-opus-5-5, chat, Input", output: "claude-opus-5-5, chat, Output" },
-  "gpt-5.5": { input: "gpt-5.5, Chat, Input", output: "gpt-5.5, Chat, Output" },
-  "gemini-3-pro": { input: "Gemini 3 Pro, Chat, Input", output: "Gemini 3 Pro, Chat, Output" },
+  "gpt-5.5": { input: "gpt-5.5, Chat, Input", output: "gpt-5.5, Chat, Output", cached_input: "gpt-5.5, Chat, Cached Input" },
 };
 
 // kie's "Our Price" (usdPrice) and "Official / Fal Price" (falPrice, null when kie shows N/A) for every record above.
@@ -98,7 +97,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
   }
   for (const m of chatModels()) {
-    for (const k of ["input", "output"]) {
+    for (const k of Object.keys(CHAT_SOURCE[m.id])) {
       const rec = byDesc.get(CHAT_SOURCE[m.id][k]), live = rec ? Number(rec.usdPrice) : null, ok = live != null && Math.abs(live - m.kie[k]) < 1e-9;
       if (!ok) changed++;
       if (!md) console.log(`${ok ? "ok " : "!! "} ${m.id.padEnd(20)} ${k.padEnd(18)} catalog $${m.kie[k]}  kie ${live == null ? "(no record)" : "$" + live}`);

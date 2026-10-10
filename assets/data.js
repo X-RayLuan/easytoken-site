@@ -77,8 +77,6 @@ const MODELS = [
    blurb:"Frontier reasoning and coding. OpenAI-compatible endpoint.", chat:true},
   {id:"gpt-5.5",         name:"GPT-5.5",         provider:"OpenAI",     cat:"chat",  unit:"1M output tokens",  official:30.00, ours:9.66,  eta:"streaming",
    blurb:"General-purpose model with tool calls and JSON mode.", chat:true},
-  {id:"gemini-3-pro",    name:"Gemini 3 Pro",    provider:"Google",     cat:"chat",  unit:"1M output tokens",  official:12.00, ours:4.025,  eta:"streaming",
-   blurb:"Long context and multimodal input for documents and video.", chat:true},
 ];
 const CATS = [["video","Video"],["image","Image"],["audio","Audio"],["chat","Chat"]];
 const API_BASE = "https://api.easytoken.si/v1";

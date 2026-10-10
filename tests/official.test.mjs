@@ -32,7 +32,7 @@ test("every kie price in worker/catalog.js matches the kie.ai snapshot", () => {
   for (const m of mediaModels())
     for (const [tier, v] of Object.entries(m.kie)) near(Array.isArray(v) ? v[0] : v, snap[SOURCE[m.id][tier]].kie, `${m.id} ${tier}`);
   for (const m of chatModels())
-    for (const k of ["input", "output"]) near(m.kie[k], snap[CHAT_SOURCE[m.id][k]].kie, `${m.id} ${k}`);
+    for (const k of Object.keys(CHAT_SOURCE[m.id])) near(m.kie[k], snap[CHAT_SOURCE[m.id][k]].kie, `${m.id} ${k}`);
 });
 
 test("every sale price is kie × 1.15 (media per option, chat per input and output token)", () => {
@@ -42,6 +42,7 @@ test("every sale price is kie × 1.15 (media per option, chat per input and outp
   for (const m of chatModels()) {
     near(m.input, saleMicros(m.kie.input) / 1e6, `${m.id} input`);
     near(m.output, saleMicros(m.kie.output) / 1e6, `${m.id} output`);
+    for (const [k, v] of Object.entries(m.kie)) assert.equal(m.rates[k], saleMicros(v), `${m.id} ${k}`);
   }
 });
 

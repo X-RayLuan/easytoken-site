@@ -80,6 +80,7 @@
 
     <h2 id="chat">Chat completions</h2>
     <p><code>POST /v1/chat/completions</code> follows the OpenAI format, including streaming, tools and JSON mode. Point any OpenAI SDK at our base URL.</p>
+    <p>You are billed for the input and output tokens the provider reports, at the per-1M-token prices in <code>GET /v1/models</code> (cached input is cheaper). Failed requests and streams that end early are not charged. <code>n</code> must be 1; <code>gpt-5.5</code> does not accept <code>stop</code>.</p>
     <div class="term-card"><div class="bar"><span>chat.js</span><button class="copy" type="button" data-copy="#d2">Copy</button></div>
 <pre class="code" id="d2"><span class="k">import</span> OpenAI <span class="k">from</span> <span class="s">"openai"</span>;
 

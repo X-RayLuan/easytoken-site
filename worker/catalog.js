@@ -302,15 +302,21 @@ export function quote(model, input) {
   return { up, charges, micros };
 }
 
-// USD per 1M tokens: `kie` is kie's chat price (same snapshot as media); `input`/`output` are kie × MARKUP.
-// `upstream` is still the OpenRouter model id (override with CHAT_MODEL_MAP); OpenRouter bills the provider's list
-// price, which is above these sale prices, so chat must move to kie before this pricing goes live.
+// Chat runs on kie.ai. USD per 1M tokens: `kie` is kie's chat price (same snapshot as media); the sale price of every
+// token class is kie × MARKUP. `api` is the kie endpoint format: "anthropic" = /claude/v1/messages, "responses" =
+// /codex/v1/responses; worker/chat.js translates both to and from the OpenAI chat format.
+// claude cache_read: kie bills cache reads at 0.05 × input and cache writes at 0 (not on kie.ai/pricing; measured
+// against credits_consumed on live calls, 2026-10-10). gpt cached_input is kie's listed "Cached Input" price.
+// Gemini 3 Pro is not offered: kie's /gemini-3-pro endpoint does not say which Gemini model it serves.
 const CHAT = [
-  { id: "claude-opus-5-5", cat: "chat", kie: { input: 1.60, output: 8.00 }, upstream: "anthropic/claude-opus-5.5" },
-  { id: "gpt-5.5", cat: "chat", kie: { input: 1.40, output: 8.40 }, upstream: "openai/gpt-5.5" },
-  { id: "gemini-3-pro", cat: "chat", kie: { input: 0.50, output: 3.50 }, upstream: "google/gemini-3-pro" },
+  { id: "claude-opus-5-5", cat: "chat", kie: { input: 1.60, output: 8.00, cache_read: 0.08 }, api: "anthropic", path: "/claude/v1/messages", upstream: "claude-opus-5-5" },
+  { id: "gpt-5.5", cat: "chat", kie: { input: 1.40, output: 8.40, cached_input: 0.14 }, api: "responses", path: "/codex/v1/responses", upstream: "gpt-5-5" },
 ];
-for (const m of CHAT) { m.input = saleMicros(m.kie.input) / 1e6; m.output = saleMicros(m.kie.output) / 1e6; }
+// Sale micro-dollars per 1M tokens for each token class, and the per-1M USD prices /v1/models shows.
+for (const m of CHAT) {
+  m.rates = Object.fromEntries(Object.entries(m.kie).map(([k, v]) => [k, saleMicros(v)]));
+  m.input = m.rates.input / 1e6; m.output = m.rates.output / 1e6;
+}
 
 export const mediaModel = id => MEDIA.find(m => m.id === id) || null;
 export const mediaModels = () => MEDIA;
@@ -319,9 +325,6 @@ export const chatModels = () => CHAT;
 export const allModels = () => [
   ...MEDIA.map(m => ({ id: m.id, object: "model", type: m.cat, endpoint: "/v1/tasks",
     pricing: Object.entries(m.tiers).map(([option, t]) => ({ option, usd: t.micros / 1e6, per: t.per })) })),
-  ...CHAT.map(m => ({ id: m.id, object: "model", type: "chat", endpoint: "/v1/chat/completions", input_usd_per_1m: m.input, output_usd_per_1m: m.output })),
+  ...CHAT.map(m => ({ id: m.id, object: "model", type: "chat", endpoint: "/v1/chat/completions", input_usd_per_1m: m.input, output_usd_per_1m: m.output,
+    ...(m.rates.cache_read ? { cache_read_usd_per_1m: m.rates.cache_read / 1e6 } : {}), ...(m.rates.cached_input ? { cached_input_usd_per_1m: m.rates.cached_input / 1e6 } : {}) })),
 ];
-export function applyChatOverrides(env) {
-  if (!env.CHAT_MODEL_MAP) return;
-  try { const map = JSON.parse(env.CHAT_MODEL_MAP); for (const m of CHAT) if (map[m.id]) m.upstream = map[m.id]; } catch {}
-}
