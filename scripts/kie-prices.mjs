@@ -1,7 +1,8 @@
 // Compare worker/catalog.js against kie.ai's live price list (the public data behind kie.ai/pricing; free, no API key).
 //   node scripts/kie-prices.mjs             → lists every tier, exits 1 if a kie price changed
 //   node scripts/kie-prices.mjs --markdown  → price table (kie price, our price) for PRs and docs
-import { mediaModels, MARKUP } from "../worker/catalog.js";
+//   node scripts/kie-prices.mjs --snapshot  → rewrite scripts/kie-snapshot.json (kie price + kie's official price)
+import { mediaModels, chatModels, MARKUP } from "../worker/catalog.js";
 
 // Where each catalog tier's kie price comes from: the `modelDescription` of the kie pricing record.
 export const SOURCE = {
@@ -50,7 +51,19 @@ export const SOURCE = {
   "grok-imagine-image": { "image": "grok-imagine-image-2-0, Text to Image" },
   "wan-2.7-image": { "image": "wan 2.7 image" },
   "wan-2.7-image-pro": { "image": "wan 2.7 image pro" },
+  "suno-v6": { "fixed": "Suno, Generate Music" },
+  "elevenlabs-v3": { "fixed": "Elevenlabs V3 , Text to dialogue" },
 };
+export const CHAT_SOURCE = {
+  "claude-opus-5-5": { input: "claude-opus-5-5, chat, Input", output: "claude-opus-5-5, chat, Output" },
+  "gpt-5.5": { input: "gpt-5.5, Chat, Input", output: "gpt-5.5, Chat, Output" },
+  "gemini-3-pro": { input: "Gemini 3 Pro, Chat, Input", output: "Gemini 3 Pro, Chat, Output" },
+};
+
+// kie's "Our Price" (usdPrice) and "Official / Fal Price" (falPrice, null when kie shows N/A) for every record above.
+export const SNAPSHOT = new URL("./kie-snapshot.json", import.meta.url);
+const descriptions = () => [...Object.values(SOURCE), ...Object.values(CHAT_SOURCE)].flatMap(Object.values);
+const entry = r => ({ kie: Number(r.usdPrice), official: r.falPrice?.trim() ? Number(r.falPrice) : null });
 
 async function fetchKie() {
   const out = [];
@@ -63,12 +76,19 @@ async function fetchKie() {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
+  const { readFileSync, writeFileSync } = await import("node:fs");
   const byDesc = new Map((await fetchKie()).map(r => [r.modelDescription.trim(), r]));
+  if (process.argv.includes("--snapshot")) {
+    const records = Object.fromEntries([...new Set(descriptions())].sort().map(d => [d, entry(byDesc.get(d))]));
+    writeFileSync(SNAPSHOT, JSON.stringify({ source: "https://kie.ai/pricing", date: new Date().toISOString().slice(0, 10), records }, null, 1) + "\n");
+    console.log(`Wrote ${Object.keys(records).length} records to scripts/kie-snapshot.json`);
+    process.exit(0);
+  }
+  const snap = JSON.parse(readFileSync(SNAPSHOT, "utf8")).records;
   const md = process.argv.includes("--markdown");
   let changed = 0;
   if (md) console.log(`| Model | Option | Unit | Kie price | EasyToken price (×${MARKUP}) |\n|---|---|---|---|---|`);
   for (const m of mediaModels()) {
-    if (!m.kie) continue;
     for (const [tier, v] of Object.entries(m.kie)) {
       const ours = Array.isArray(v) ? v[0] : v, desc = SOURCE[m.id]?.[tier], rec = desc && byDesc.get(desc);
       const live = rec ? Number(rec.usdPrice) : null, ok = live != null && Math.abs(live - ours) < 1e-9;
@@ -77,6 +97,21 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       else console.log(`${ok ? "ok " : "!! "} ${m.id.padEnd(20)} ${tier.padEnd(18)} catalog $${ours}  kie ${live == null ? `(no record: ${desc})` : "$" + live}`);
     }
   }
-  if (!md) console.log(changed ? `\n${changed} tier(s) differ from kie.ai` : "\nAll tiers match kie.ai");
+  for (const m of chatModels()) {
+    for (const k of ["input", "output"]) {
+      const rec = byDesc.get(CHAT_SOURCE[m.id][k]), live = rec ? Number(rec.usdPrice) : null, ok = live != null && Math.abs(live - m.kie[k]) < 1e-9;
+      if (!ok) changed++;
+      if (!md) console.log(`${ok ? "ok " : "!! "} ${m.id.padEnd(20)} ${k.padEnd(18)} catalog $${m.kie[k]}  kie ${live == null ? "(no record)" : "$" + live}`);
+    }
+  }
+  // The official price we show comes from the snapshot; flag any record whose kie or official price moved since.
+  for (const d of new Set(descriptions())) {
+    const live = byDesc.get(d) && entry(byDesc.get(d)), was = snap[d];
+    if (!live || !was || live.kie !== was.kie || live.official !== was.official) {
+      changed++;
+      if (!md) console.log(`!!  snapshot ${d}: was ${JSON.stringify(was)}, kie now ${JSON.stringify(live)}`);
+    }
+  }
+  if (!md) console.log(changed ? `\n${changed} price(s) differ from kie.ai (update catalog.js, then --snapshot)` : "\nAll prices match kie.ai and the snapshot");
   process.exitCode = changed ? 1 : 0;
 }

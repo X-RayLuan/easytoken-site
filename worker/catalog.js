@@ -1,7 +1,8 @@
 // Billing source of truth: what each public model costs and how it maps to the upstream request.
-// Media prices are kie.ai's list price × MARKUP, per model and per option (resolution, duration, mode, audio…).
+// Every price (media and chat) is kie.ai's list price × MARKUP, per model and per option (resolution, duration, mode, audio…).
 // `kie` holds kie's USD price per unit, snapshot from kie.ai/pricing (public API: POST
-// https://api.kie.ai/client/v1/model-pricing/page) on 2026-10-09. Re-check with `node scripts/kie-prices.mjs`.
+// https://api.kie.ai/client/v1/model-pricing/page) on 2026-10-10 and saved in scripts/kie-snapshot.json.
+// Re-check with `node scripts/kie-prices.mjs`.
 // `build` validates the caller's input and returns the upstream request plus the billable `charges`
 // ([tier, quantity] pairs), so the price is known exactly before the task is submitted.
 // The front end's example prices in assets/data.js are checked against this file by tests/catalog.test.mjs.
@@ -235,8 +236,8 @@ const MEDIA = [
     kie: { "image": 0.06 },
     build: i => wanImage("wan/2-7-image-pro", i, ["1K", "2K", "4K"]) },
 
-  // ---------- Audio (unchanged: fixed price per unit) ----------
-  { id: "suno-v6", cat: "audio", per: "song, up to 4 min", fixed: 0.08,
+  // ---------- Audio ----------
+  { id: "suno-v6", cat: "audio", per: "song, up to 4 min", kie: { "fixed": 0.06 },
     // Custom mode when the caller supplies lyrics or a title; otherwise Suno writes everything from the prompt + style.
     build: i => {
       const instrumental = bool(i.instrumental, "instrumental", false);
@@ -245,7 +246,7 @@ const MEDIA = [
       const p = prompt(i, 3000);
       return job("ai-music-api/generate", { model: "V6", custom_mode: false, instrumental, prompt: p, style: i.style != null ? str(i.style, "style", 1000) : p.slice(0, 1000) }, ["fixed", 1]);
     } },
-  { id: "elevenlabs-v3", cat: "audio", per: "1k characters", fixed: 0.18,
+  { id: "elevenlabs-v3", cat: "audio", per: "1k characters", kie: { "fixed": 0.07 },
     build: i => { const text = str(i.text ?? i.prompt, "text", 1000);
       return job("elevenlabs/text-to-dialogue-v3", { dialogue: [{ text, voice: i.voice == null ? "Rachel" : str(i.voice, "voice", 64) }],
         stability: oneOf(i.stability, "stability", [0, 0.5, 1], 0.5) }, ["fixed", 1]); } },
@@ -285,8 +286,7 @@ function wanImage(model, i, resolutions) {
 }
 
 // Sale price table per model: { tier: { micros, per } }.
-const tiers = m => m.fixed != null ? { fixed: { micros: Math.round(m.fixed * 1e6), per: m.per } }
-  : Object.fromEntries(Object.entries(m.kie).map(([k, v]) => Array.isArray(v) ? [k, { micros: saleMicros(v[0]), per: v[1] }] : [k, { micros: saleMicros(v), per: m.per }]));
+const tiers = m => Object.fromEntries(Object.entries(m.kie).map(([k, v]) => Array.isArray(v) ? [k, { micros: saleMicros(v[0]), per: v[1] }] : [k, { micros: saleMicros(v), per: m.per }]));
 for (const m of MEDIA) m.tiers = tiers(m);
 
 // Validate `input` and return the upstream request builder plus the exact cost in micro-dollars. Throws 422 on bad input.
@@ -302,16 +302,20 @@ export function quote(model, input) {
   return { up, charges, micros };
 }
 
-// USD per 1M tokens. `upstream` is the OpenRouter model id; override with CHAT_MODEL_MAP if the provider renames it.
+// USD per 1M tokens: `kie` is kie's chat price (same snapshot as media); `input`/`output` are kie × MARKUP.
+// `upstream` is still the OpenRouter model id (override with CHAT_MODEL_MAP); OpenRouter bills the provider's list
+// price, which is above these sale prices, so chat must move to kie before this pricing goes live.
 const CHAT = [
-  { id: "claude-opus-5-5", cat: "chat", input: 4.00, output: 20.00, upstream: "anthropic/claude-opus-5.5" },
-  { id: "gpt-5.5", cat: "chat", input: 1.60, output: 8.00, upstream: "openai/gpt-5.5" },
-  { id: "gemini-3-pro", cat: "chat", input: 1.92, output: 9.60, upstream: "google/gemini-3-pro" },
+  { id: "claude-opus-5-5", cat: "chat", kie: { input: 1.60, output: 8.00 }, upstream: "anthropic/claude-opus-5.5" },
+  { id: "gpt-5.5", cat: "chat", kie: { input: 1.40, output: 8.40 }, upstream: "openai/gpt-5.5" },
+  { id: "gemini-3-pro", cat: "chat", kie: { input: 0.50, output: 3.50 }, upstream: "google/gemini-3-pro" },
 ];
+for (const m of CHAT) { m.input = saleMicros(m.kie.input) / 1e6; m.output = saleMicros(m.kie.output) / 1e6; }
 
 export const mediaModel = id => MEDIA.find(m => m.id === id) || null;
 export const mediaModels = () => MEDIA;
 export const chatModel = id => CHAT.find(m => m.id === id) || null;
+export const chatModels = () => CHAT;
 export const allModels = () => [
   ...MEDIA.map(m => ({ id: m.id, object: "model", type: m.cat, endpoint: "/v1/tasks",
     pricing: Object.entries(m.tiers).map(([option, t]) => ({ option, usd: t.micros / 1e6, per: t.per })) })),

@@ -95,9 +95,9 @@ test("inputs that would be billed differently than quoted are refused", () => {
   assert.throws(() => quote(mediaModel("elevenlabs-v3"), { text: "a".repeat(1001) }), /1000/);
 });
 
-test("audio models keep their fixed prices", () => {
-  assert.equal(usd("suno-v6", { prompt: "x" }), 0.08);
-  assert.equal(usd("elevenlabs-v3", { text: "hi" }), 0.18);
+test("audio models are priced at kie × 1.15 like everything else", () => {
+  assert.equal(usd("suno-v6", { prompt: "x" }), 0.069);
+  assert.equal(usd("elevenlabs-v3", { text: "hi" }), 0.0805);
 });
 
 const IMG = n => Array.from({ length: n }, (_, k) => `https://a.test/${k}.png`);
