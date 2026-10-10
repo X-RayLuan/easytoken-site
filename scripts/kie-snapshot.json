@@ -1,0 +1,474 @@
+{
+ "source": "https://kie.ai/pricing",
+ "date": "2026-10-10",
+ "records": {
+  "Black Forest Labs Flux 2 Flex, text to image, 1.0s-1K": {
+   "kie": 0.07,
+   "official": 0.12
+  },
+  "Black Forest Labs Flux 2 Flex, text to image, 1.0s-2K": {
+   "kie": 0.12,
+   "official": 0.18
+  },
+  "Black Forest Labs flux-2 pro, text-to-image, 1.0s-1K": {
+   "kie": 0.025,
+   "official": 0.03
+  },
+  "Black Forest Labs flux-2 pro, text-to-image, 1.0s-2K": {
+   "kie": 0.035,
+   "official": 0.045
+  },
+  "Elevenlabs V3 , Text to dialogue": {
+   "kie": 0.07,
+   "official": 0.1
+  },
+  "Google nano banana 2, 1K": {
+   "kie": 0.04,
+   "official": 0.08
+  },
+  "Google nano banana 2, 2K": {
+   "kie": 0.06,
+   "official": 0.12
+  },
+  "Google nano banana 2, 4K": {
+   "kie": 0.09,
+   "official": 0.16
+  },
+  "Google nano banana pro, 1/2K": {
+   "kie": 0.09,
+   "official": 0.15
+  },
+  "Google nano banana pro, 4K": {
+   "kie": 0.12,
+   "official": 0.3
+  },
+  "Google veo 3.1, text-to-video, Fast-1080p": {
+   "kie": 0.325,
+   "official": 1.2
+  },
+  "Google veo 3.1, text-to-video, Fast-4K": {
+   "kie": 0.9,
+   "official": 2.4
+  },
+  "Google veo 3.1, text-to-video, Fast-720p": {
+   "kie": 0.3,
+   "official": 1.2
+  },
+  "Google veo 3.1, text-to-video, Lite-1080p": {
+   "kie": 0.175,
+   "official": 0.64
+  },
+  "Google veo 3.1, text-to-video, Lite-4K": {
+   "kie": 0.75,
+   "official": null
+  },
+  "Google veo 3.1, text-to-video, Lite-720p": {
+   "kie": 0.15,
+   "official": 0.4
+  },
+  "Google veo 3.1, text-to-video, Quality-1080p": {
+   "kie": 1.275,
+   "official": 3.2
+  },
+  "Google veo 3.1, text-to-video, Quality-4K": {
+   "kie": 1.85,
+   "official": 4.8
+  },
+  "Google veo 3.1, text-to-video, Quality-720p": {
+   "kie": 1.25,
+   "official": 3.2
+  },
+  "HappyHorse-1.1, text-to-video, 1080p": {
+   "kie": 0.145,
+   "official": 0.18
+  },
+  "HappyHorse-1.1, text-to-video, 720p": {
+   "kie": 0.1125,
+   "official": 0.14
+  },
+  "Kling 3.0, video, with audio-1080P": {
+   "kie": 0.135,
+   "official": 0.168
+  },
+  "Kling 3.0, video, with audio-4K": {
+   "kie": 0.335,
+   "official": 0.42
+  },
+  "Kling 3.0, video, with audio-720P": {
+   "kie": 0.1,
+   "official": 0.126
+  },
+  "Kling 3.0, video, without audio-1080P": {
+   "kie": 0.09,
+   "official": 0.112
+  },
+  "Kling 3.0, video, without audio-4K": {
+   "kie": 0.335,
+   "official": 0.42
+  },
+  "Kling 3.0, video, without audio-720P": {
+   "kie": 0.07,
+   "official": 0.084
+  },
+  "MiniMax H3, image input, 768p, 2k": {
+   "kie": 0.02,
+   "official": null
+  },
+  "MiniMax H3, text to video, 2K": {
+   "kie": 0.065,
+   "official": null
+  },
+  "MiniMax H3, text to video, 768p": {
+   "kie": 0.04,
+   "official": null
+  },
+  "Qwen image 3.0 Pro, input, 1K": {
+   "kie": 0.0025,
+   "official": 0.003
+  },
+  "Qwen image 3.0 Pro, text to image, 1K": {
+   "kie": 0.032,
+   "official": 0.04
+  },
+  "Qwen image 3.0 Pro, text to image, 2K": {
+   "kie": 0.06,
+   "official": 0.075
+  },
+  "Qwen image 3.0, input, 1K": {
+   "kie": 0.0025,
+   "official": 0.003
+  },
+  "Qwen image 3.0, text to image, 1K": {
+   "kie": 0.024,
+   "official": 0.03
+  },
+  "Qwen image 3.0, text to image, 2K": {
+   "kie": 0.024,
+   "official": 0.03
+  },
+  "Suno, Generate Music": {
+   "kie": 0.06,
+   "official": null
+  },
+  "bytedance/seedance-2 fast, 480p no video input": {
+   "kie": 0.059,
+   "official": 0.1125
+  },
+  "bytedance/seedance-2 fast, 720p no video input": {
+   "kie": 0.124,
+   "official": 0.2419
+  },
+  "bytedance/seedance-2, 1080p no video input": {
+   "kie": 0.51,
+   "official": 0.6804
+  },
+  "bytedance/seedance-2, 480p no video input": {
+   "kie": 0.095,
+   "official": 0.1406
+  },
+  "bytedance/seedance-2, 4K no video input": {
+   "kie": 1.04,
+   "official": 1.56
+  },
+  "bytedance/seedance-2, 720p no video input": {
+   "kie": 0.205,
+   "official": 0.3024
+  },
+  "bytedance/seedance-2-5, 1080p no video": {
+   "kie": 0.79,
+   "official": 1.1372
+  },
+  "bytedance/seedance-2-5, 480p no video": {
+   "kie": 0.14,
+   "official": 0.2205
+  },
+  "bytedance/seedance-2-5, 720p no video": {
+   "kie": 0.315,
+   "official": 0.473
+  },
+  "google imagen4, text-to-image, Fast": {
+   "kie": 0.02,
+   "official": null
+  },
+  "google imagen4, text-to-image, Ultra": {
+   "kie": 0.06,
+   "official": null
+  },
+  "google imagen4, text-to-image, default": {
+   "kie": 0.04,
+   "official": null
+  },
+  "gpt image 2, text-to-image, 1k": {
+   "kie": 0.03,
+   "official": 0.219
+  },
+  "gpt image 2, text-to-image, 2k": {
+   "kie": 0.05,
+   "official": 0.234
+  },
+  "gpt image 2, text-to-image, 4k": {
+   "kie": 0.08,
+   "official": 0.413
+  },
+  "gpt-image-2-5-flare, text-to-image, 1K": {
+   "kie": 0.03,
+   "official": null
+  },
+  "gpt-image-2-5-flare, text-to-image, 2K": {
+   "kie": 0.05,
+   "official": null
+  },
+  "gpt-image-2-5-flare, text-to-image, 4K": {
+   "kie": 0.08,
+   "official": null
+  },
+  "grok-imagine, image-to-video, 1080p": {
+   "kie": 0.04,
+   "official": null
+  },
+  "grok-imagine, image-to-video, 480p": {
+   "kie": 0.012,
+   "official": 0.05
+  },
+  "grok-imagine, image-to-video, 720p": {
+   "kie": 0.0225,
+   "official": 0.07
+  },
+  "grok-imagine, text-to-video, 1080p": {
+   "kie": 0.04,
+   "official": null
+  },
+  "grok-imagine, text-to-video, 480p": {
+   "kie": 0.012,
+   "official": 0.05
+  },
+  "grok-imagine, text-to-video, 720p": {
+   "kie": 0.0225,
+   "official": 0.07
+  },
+  "grok-imagine-image-2-0, Text to Image": {
+   "kie": 0.02,
+   "official": 0.06
+  },
+  "hailuo 2.3, image-to-video, Pro-10.0s-768p": {
+   "kie": 0.45,
+   "official": null
+  },
+  "hailuo 2.3, image-to-video, Pro-6.0s-1080p": {
+   "kie": 0.4,
+   "official": 0.49
+  },
+  "hailuo 2.3, image-to-video, Pro-6.0s-768p": {
+   "kie": 0.225,
+   "official": null
+  },
+  "hailuo 2.3, image-to-video, Standard-10.0s-768p": {
+   "kie": 0.25,
+   "official": 0.56
+  },
+  "hailuo 2.3, image-to-video, Standard-6.0s-1080p": {
+   "kie": 0.25,
+   "official": null
+  },
+  "hailuo 2.3, image-to-video, Standard-6.0s-768p": {
+   "kie": 0.15,
+   "official": 0.28
+  },
+  "ideogram v3,  text-to-image, BALANCED": {
+   "kie": 0.035,
+   "official": 0.06
+  },
+  "ideogram v3,  text-to-image, QUALITY": {
+   "kie": 0.05,
+   "official": 0.09
+  },
+  "ideogram v3,  text-to-image, TURBO": {
+   "kie": 0.0175,
+   "official": 0.03
+  },
+  "kling 2.6, text-to-video, with audio-10.0s": {
+   "kie": 1.1,
+   "official": 1.4
+  },
+  "kling 2.6, text-to-video, with audio-5.0s": {
+   "kie": 0.55,
+   "official": 0.7
+  },
+  "kling 2.6, text-to-video, without audio-10.0s": {
+   "kie": 0.55,
+   "official": 0.7
+  },
+  "kling 2.6, text-to-video, without audio-5.0s": {
+   "kie": 0.275,
+   "official": 0.35
+  },
+  "kling 3.0 turbo, text-to-video, 1080P": {
+   "kie": 0.1125,
+   "official": 0.14
+  },
+  "kling 3.0 turbo, text-to-video, 720P": {
+   "kie": 0.09,
+   "official": 0.112
+  },
+  "nano-banana-2-1, 1K": {
+   "kie": 0.02,
+   "official": 0.08
+  },
+  "nano-banana-2-1, 2K": {
+   "kie": 0.03,
+   "official": 0.12
+  },
+  "nano-banana-2-1, 4K": {
+   "kie": 0.045,
+   "official": 0.16
+  },
+  "pixverse-v6, Text /Image to Video, 1080p (no audio)": {
+   "kie": 0.072,
+   "official": 0.09
+  },
+  "pixverse-v6, Text /Image to Video, 1080p (with audio)": {
+   "kie": 0.092,
+   "official": 0.115
+  },
+  "pixverse-v6, Text /Image to Video, 360p (with audio)": {
+   "kie": 0.028,
+   "official": 0.035
+  },
+  "pixverse-v6, Text /Image to Video, 360p（no audio）": {
+   "kie": 0.02,
+   "official": 0.025
+  },
+  "pixverse-v6, Text /Image to Video, 540p (no audio)": {
+   "kie": 0.028,
+   "official": 0.035
+  },
+  "pixverse-v6, Text /Image to Video, 540p (with audio)": {
+   "kie": 0.036,
+   "official": 0.045
+  },
+  "pixverse-v6, Text /Image to Video, 720p (no audio)": {
+   "kie": 0.036,
+   "official": 0.045
+  },
+  "pixverse-v6, Text /Image to Video, 720p (with audio)": {
+   "kie": 0.048,
+   "official": 0.06
+  },
+  "seedream 5 Flash, Text to image , 1K": {
+   "kie": 0.0162,
+   "official": 0.018
+  },
+  "seedream 5 Flash, Text to image, 1.5K": {
+   "kie": 0.0162,
+   "official": 0.018
+  },
+  "seedream 5 Flash, Text to image, 2K": {
+   "kie": 0.0162,
+   "official": 0.018
+  },
+  "seedream 5 Pro, input image, First image free": {
+   "kie": 0.0025,
+   "official": 0.003
+  },
+  "seedream 5 Pro, text-to-image, 1K": {
+   "kie": 0.035,
+   "official": 0.045
+  },
+  "seedream 5 Pro, text-to-image, 2K": {
+   "kie": 0.07,
+   "official": 0.09
+  },
+  "seedream 5.0 Lite, text-to-image": {
+   "kie": 0.0275,
+   "official": 0.035
+  },
+  "wan 2.6, image-to-video, 10.0s-1080p": {
+   "kie": 1.05,
+   "official": 1.5
+  },
+  "wan 2.6, image-to-video, 10.0s-720p": {
+   "kie": 0.7,
+   "official": 1
+  },
+  "wan 2.6, image-to-video, 15.0s-1080p": {
+   "kie": 1.575,
+   "official": 2.25
+  },
+  "wan 2.6, image-to-video, 15.0s-720p": {
+   "kie": 1.05,
+   "official": 1.5
+  },
+  "wan 2.6, image-to-video, 5.0s-1080p": {
+   "kie": 0.5225,
+   "official": 0.75
+  },
+  "wan 2.6, image-to-video, 5.0s-720p": {
+   "kie": 0.35,
+   "official": 0.5
+  },
+  "wan 2.6, text to video, 10.0s-1080p": {
+   "kie": 1.0475,
+   "official": 1.5
+  },
+  "wan 2.6, text to video, 10.0s-720p": {
+   "kie": 0.7,
+   "official": 1
+  },
+  "wan 2.6, text to video, 15.0s-1080p": {
+   "kie": 1.575,
+   "official": 2.25
+  },
+  "wan 2.6, text to video, 15.0s-720p": {
+   "kie": 1.05,
+   "official": 1.5
+  },
+  "wan 2.6, text to video, 5.0s-1080p": {
+   "kie": 0.5225,
+   "official": 0.75
+  },
+  "wan 2.6, text to video, 5.0s-720p": {
+   "kie": 0.35,
+   "official": 0.5
+  },
+  "wan 2.7 image": {
+   "kie": 0.024,
+   "official": 0.03
+  },
+  "wan 2.7 image pro": {
+   "kie": 0.06,
+   "official": 0.075
+  },
+  "wan 2.7 video, text-to-video, 1080p": {
+   "kie": 0.12,
+   "official": 0.15
+  },
+  "wan 2.7 video, text-to-video, 720p": {
+   "kie": 0.08,
+   "official": 0.1
+  },
+  "wan 3.0 video, 1080p, video": {
+   "kie": 0.16,
+   "official": 0.2
+  },
+  "wan 3.0 video, 480p, video": {
+   "kie": 0.04,
+   "official": 0.05
+  },
+  "wan 3.0 video, 720p, video": {
+   "kie": 0.08,
+   "official": 0.1125
+  },
+  "wan3.0 video prime, 1080p, video": {
+   "kie": 0.252,
+   "official": 0.28
+  },
+  "wan3.0 video prime, 480p, video": {
+   "kie": 0.0612,
+   "official": 0.068
+  },
+  "wan3.0 video prime, 720p, video": {
+   "kie": 0.126,
+   "official": 0.14
+  }
+ }
+}

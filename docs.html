@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Docs · EasyToken</title>
-<meta name="description" content="EasyToken API reference: authentication, tasks, chat completions, webhooks, errors and limits.">
+<meta name="description" content="EasyToken API reference: authentication, tasks, webhooks, errors and limits.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="assets/style.css">
@@ -19,7 +19,6 @@
     <div class="eyebrow">API</div>
     <a href="#tasks">Media tasks</a>
     <a href="#get-task">Get a task</a>
-    <a href="#chat">Chat completions</a>
     <a href="#webhooks">Webhooks</a>
     <div class="eyebrow">Reference</div>
     <a href="#models">Model IDs</a>
@@ -30,7 +29,7 @@
 
   <article class="prose">
     <h2 id="quickstart">Quickstart</h2>
-    <p>The API lives at <code>https://api.easytoken.si/v1</code>. Every model uses the same key. Video, image and audio models run as <strong>tasks</strong>: you create one, then receive the result by webhook or by polling. Chat models answer in the same request.</p>
+    <p>The API lives at <code>https://api.easytoken.si/v1</code>. Every model uses the same key. Video, image and audio models run as <strong>tasks</strong>: you create one, then receive the result by webhook or by polling.</p>
     <ol>
       <li><a href="signup.html">Create an account</a> and copy your API key from the dashboard.</li>
       <li>Send your first task with the request below.</li>
@@ -78,21 +77,6 @@
   "cost_usd": 1.81125
 }</pre></div>
 
-    <h2 id="chat">Chat completions</h2>
-    <p><code>POST /v1/chat/completions</code> follows the OpenAI format, including streaming, tools and JSON mode. Point any OpenAI SDK at our base URL.</p>
-    <div class="term-card"><div class="bar"><span>chat.js</span><button class="copy" type="button" data-copy="#d2">Copy</button></div>
-<pre class="code" id="d2"><span class="k">import</span> OpenAI <span class="k">from</span> <span class="s">"openai"</span>;
-
-<span class="k">const</span> client = <span class="k">new</span> OpenAI({
-  baseURL: <span class="s">"https://api.easytoken.si/v1"</span>,
-  apiKey: process.env.EASYTOKEN_KEY,
-});
-
-<span class="k">const</span> res = <span class="k">await</span> client.chat.completions.create({
-  model: <span class="m">"claude-opus-5-5"</span>,
-  messages: [{ role: <span class="s">"user"</span>, content: <span class="s">"Summarise this brief in 3 bullets"</span> }],
-});</pre></div>
-
     <h2 id="webhooks">Webhooks</h2>
     <p>When you pass <code>callback_url</code>, we send the same body as <a href="#get-task">Get a task</a> once the task finishes. Each request carries an <code>X-EasyToken-Signature</code> header: an HMAC-SHA256 of the raw body with your webhook secret. Reply with any 2xx within 10 seconds; we retry up to 5 times with backoff.</p>
 
@@ -113,7 +97,7 @@
       </tbody></table></div>
 
     <h2 id="limits">Rate limits</h2>
-    <p>New accounts can run 10 media tasks at once per model and 60 chat requests per minute. Limits rise automatically with usage; contact support if you need more for a launch.</p>
+    <p>New accounts can run 10 media tasks at once per model. Limits rise automatically with usage; contact support if you need more for a launch.</p>
 
     <h2 id="billing">Billing</h2>
     <p>Usage is paid from prepaid credits. Each task's price depends on the options you pick, is fixed when it is created and shown in <code>cost_usd</code>. To see a price first, <code>POST /v1/quote</code> with the same <code>model</code> and <code>input</code> as a task (no key needed, nothing is charged). Tasks that fail, time out or are blocked by a safety filter are refunded automatically.</p>
@@ -123,7 +107,7 @@
 <script src="assets/data.js"></script>
 <script src="assets/site.js"></script>
 <script>
-$("#model-rows").innerHTML = MODELS.map(m => `<tr><td><code>${m.id}</code></td><td>${m.cat}</td><td><code>${m.chat ? "/chat/completions" : "/tasks"}</code></td><td class="r">${usd(m.ours)} <span class="muted small">/ ${esc(m.unit)}</span></td></tr>`).join("");
+$("#model-rows").innerHTML = MODELS.map(m => `<tr><td><code>${m.id}</code></td><td>${m.cat}</td><td><code>/tasks</code></td><td class="r">${usd(m.ours)} <span class="muted small">/ ${esc(m.unit)}</span></td></tr>`).join("");
 </script>
 </body>
 </html>

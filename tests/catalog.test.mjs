@@ -16,14 +16,13 @@ test("every front-end model is billable, and its example price is what the examp
   const billed = Object.fromEntries(allModels().map(m => [m.id, m]));
   for (const m of MODELS) {
     assert.ok(billed[m.id], `${m.id} missing from worker catalog`);
-    if (m.chat) assert.equal(billed[m.id].output_usd_per_1m, m.ours, m.id);
-    else assert.equal(usd(m.id, m.input), m.ours, m.id);
+    assert.equal(usd(m.id, m.input), m.ours, m.id);
   }
   assert.equal(Object.keys(billed).length, MODELS.length);
 });
 
 test("the example price is also the default price, so the playground shows what a run costs", () => {
-  for (const m of MODELS.filter(m => !m.chat && !m.input.image_urls)) assert.equal(usd(m.id, { prompt: "x" }), m.ours, m.id);
+  for (const m of MODELS.filter(m => !m.input.image_urls)) assert.equal(usd(m.id, { prompt: "x" }), m.ours, m.id);
 });
 
 test("sale price is kie price × 1.15, rounded up to the micro-dollar", () => {
@@ -46,7 +45,7 @@ test("every kie tier has a documented source record", () => {
 });
 
 test("each media model builds an upstream request from its example input", () => {
-  for (const m of MODELS.filter(m => !m.chat)) {
+  for (const m of MODELS) {
     const req = quote(mediaModel(m.id), m.input).up("https://x.test/cb");
     assert.ok(req.model && req.input && req.callbackUrl, m.id);
     assert.ok(!Object.values(req.input).includes(undefined), m.id);
@@ -95,9 +94,9 @@ test("inputs that would be billed differently than quoted are refused", () => {
   assert.throws(() => quote(mediaModel("elevenlabs-v3"), { text: "a".repeat(1001) }), /1000/);
 });
 
-test("audio models keep their fixed prices", () => {
-  assert.equal(usd("suno-v6", { prompt: "x" }), 0.08);
-  assert.equal(usd("elevenlabs-v3", { text: "hi" }), 0.18);
+test("audio models are priced at kie × 1.15 like everything else", () => {
+  assert.equal(usd("suno-v6", { prompt: "x" }), 0.069);
+  assert.equal(usd("elevenlabs-v3", { text: "hi" }), 0.0805);
 });
 
 const IMG = n => Array.from({ length: n }, (_, k) => `https://a.test/${k}.png`);

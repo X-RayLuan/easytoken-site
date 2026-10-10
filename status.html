@@ -21,7 +21,7 @@
 <script src="assets/data.js"></script>
 <script src="assets/site.js"></script>
 <script>
-const SVCS = [["API gateway",99.99],["Dashboard",99.98],["Video models",99.71],["Image models",99.93],["Audio models",99.95],["Chat models",99.96],["Webhooks",99.97]];
+const SVCS = [["API gateway",99.99],["Dashboard",99.98],["Video models",99.71],["Image models",99.93],["Audio models",99.95],["Webhooks",99.97]];
 $("#svcs").innerHTML = SVCS.map(([n,u],j) => `<div class="svc"><b>${n}</b><div class="bars" aria-hidden="true">${Array.from({length:90},(_,i)=>`<i class="${(i*7+j*13)%97===3&&u<99.95?"warn":""}"></i>`).join("")}</div><span class="badge ok">${u}%</span></div>`).join("");
 </script>
 </body>
