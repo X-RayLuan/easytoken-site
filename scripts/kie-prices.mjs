@@ -2,7 +2,7 @@
 //   node scripts/kie-prices.mjs             → lists every tier, exits 1 if a kie price changed
 //   node scripts/kie-prices.mjs --markdown  → price table (kie price, our price) for PRs and docs
 //   node scripts/kie-prices.mjs --snapshot  → rewrite scripts/kie-snapshot.json (kie price + kie's official price)
-import { mediaModels, chatModels, MARKUP } from "../worker/catalog.js";
+import { mediaModels, MARKUP } from "../worker/catalog.js";
 
 // Where each catalog tier's kie price comes from: the `modelDescription` of the kie pricing record.
 export const SOURCE = {
@@ -54,15 +54,10 @@ export const SOURCE = {
   "suno-v6": { "fixed": "Suno, Generate Music" },
   "elevenlabs-v3": { "fixed": "Elevenlabs V3 , Text to dialogue" },
 };
-export const CHAT_SOURCE = {
-  "claude-opus-5-5": { input: "claude-opus-5-5, chat, Input", output: "claude-opus-5-5, chat, Output" },
-  "gpt-5.5": { input: "gpt-5.5, Chat, Input", output: "gpt-5.5, Chat, Output" },
-  "gemini-3-pro": { input: "Gemini 3 Pro, Chat, Input", output: "Gemini 3 Pro, Chat, Output" },
-};
 
 // kie's "Our Price" (usdPrice) and "Official / Fal Price" (falPrice, null when kie shows N/A) for every record above.
 export const SNAPSHOT = new URL("./kie-snapshot.json", import.meta.url);
-const descriptions = () => [...Object.values(SOURCE), ...Object.values(CHAT_SOURCE)].flatMap(Object.values);
+const descriptions = () => Object.values(SOURCE).flatMap(Object.values);
 const entry = r => ({ kie: Number(r.usdPrice), official: r.falPrice?.trim() ? Number(r.falPrice) : null });
 
 async function fetchKie() {
@@ -95,13 +90,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       if (!ok) changed++;
       if (md) console.log(`| ${m.id} | ${tier} | ${m.tiers[tier].per} | $${ours} | $${(m.tiers[tier].micros / 1e6).toFixed(6).replace(/0+$/, "")} |`);
       else console.log(`${ok ? "ok " : "!! "} ${m.id.padEnd(20)} ${tier.padEnd(18)} catalog $${ours}  kie ${live == null ? `(no record: ${desc})` : "$" + live}`);
-    }
-  }
-  for (const m of chatModels()) {
-    for (const k of ["input", "output"]) {
-      const rec = byDesc.get(CHAT_SOURCE[m.id][k]), live = rec ? Number(rec.usdPrice) : null, ok = live != null && Math.abs(live - m.kie[k]) < 1e-9;
-      if (!ok) changed++;
-      if (!md) console.log(`${ok ? "ok " : "!! "} ${m.id.padEnd(20)} ${k.padEnd(18)} catalog $${m.kie[k]}  kie ${live == null ? "(no record)" : "$" + live}`);
     }
   }
   // The official price we show comes from the snapshot; flag any record whose kie or official price moved since.

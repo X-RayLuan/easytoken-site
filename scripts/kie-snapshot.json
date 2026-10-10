@@ -22,14 +22,6 @@
    "kie": 0.07,
    "official": 0.1
   },
-  "Gemini 3 Pro, Chat, Input": {
-   "kie": 0.5,
-   "official": 2
-  },
-  "Gemini 3 Pro, Chat, Output": {
-   "kie": 3.5,
-   "official": 12
-  },
   "Google nano banana 2, 1K": {
    "kie": 0.04,
    "official": 0.08
@@ -194,14 +186,6 @@
    "kie": 0.315,
    "official": 0.473
   },
-  "claude-opus-5-5, chat, Input": {
-   "kie": 1.6,
-   "official": 4
-  },
-  "claude-opus-5-5, chat, Output": {
-   "kie": 8,
-   "official": 20
-  },
   "google imagen4, text-to-image, Fast": {
    "kie": 0.02,
    "official": null
@@ -225,14 +209,6 @@
   "gpt image 2, text-to-image, 4k": {
    "kie": 0.08,
    "official": 0.413
-  },
-  "gpt-5.5, Chat, Input": {
-   "kie": 1.4,
-   "official": 5
-  },
-  "gpt-5.5, Chat, Output": {
-   "kie": 8.4,
-   "official": 30
   },
   "gpt-image-2-5-flare, text-to-image, 1K": {
    "kie": 0.03,

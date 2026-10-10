@@ -57,13 +57,13 @@ api("/me").then(r => { live = !!r.user; if (r.user) $("#demo-note").innerHTML = 
 function cur(){ return modelById(sel.value) }
 function sync(){
   const m = cur();
-  $("#prompt").value = $("#prompt").dataset.touched ? $("#prompt").value : (m.input?.prompt || m.input?.text || "Write a 15-second ad script for a coffee brand.");
+  $("#prompt").value = $("#prompt").dataset.touched ? $("#prompt").value : (m.input?.prompt || m.input?.text);
   const opts = OPTS[m.cat];
   $("#opt-wrap").hidden = !opts;
   $("#opt").innerHTML = (opts || []).map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
   $("#c-off-label").textContent = OFF_LABEL + ":";
   $("#c-off").innerHTML = save(m) ? `<s>${offUsd(m)}</s>` : offUsd(m);
-  $("#c-ours").textContent = m.chat ? `${usd(m.ours)} / 1M tok` : usd(m.ours);
+  $("#c-ours").textContent = usd(m.ours);
   $("#code").innerHTML = snippet(m);
   $("#result").textContent = "Your output will appear here.";
 }
@@ -81,12 +81,6 @@ function showResult(m, t){
 
 async function runLive(m){
   const out = $("#result"), input = $("#opt-wrap").hidden ? {} : { aspect_ratio: $("#opt").value };
-  if (m.chat) {
-    out.innerHTML = `<div class="mono small">thinking…</div>`;
-    const r = await api("/playground", { model: m.id, prompt: $("#prompt").value });
-    out.innerHTML = `<div class="chat"></div>`; out.firstChild.textContent = r.choices?.[0]?.message?.content || "(empty reply)";
-    return;
-  }
   let t = await api("/playground", { model: m.id, prompt: $("#prompt").value, input });
   const started = Date.now();
   out.innerHTML = `<div style="width:100%;display:grid;justify-items:center"><div class="mono small">${esc(t.id)} · ${esc(m.id)} · est. ${esc(m.eta)}</div><div class="progress"><i></i></div><div class="small muted" id="pg-st">queued</div></div>`;
@@ -100,14 +94,8 @@ async function runLive(m){
   showResult(m, t);
 }
 
-const SAMPLE = "Open on steam rising from a fresh cup.\nVO: \"Mornings are hard. Your coffee shouldn't be.\"\nCut to the pour, slow motion.\nVO: \"Roasted in small batches, delivered in 48 hours.\"\nEnd card: logo and \"First bag free.\"";
 function runDemo(m){
   const out = $("#result"), btn = $("#run");
-  if (m.chat) {
-    out.innerHTML = `<div class="chat"></div>`; let i = 0;
-    const t = setInterval(() => { out.firstChild.textContent = SAMPLE.slice(0, i += 4); if (i >= SAMPLE.length) { clearInterval(t); btn.disabled = false; } }, 18);
-    return;
-  }
   out.innerHTML = `<div style="width:100%;display:grid;justify-items:center"><div class="mono small">task queued · ${esc(m.id)} · est. ${esc(m.eta)}</div><div class="progress"><i></i></div></div>`;
   let p = 0;
   const t = setInterval(() => {

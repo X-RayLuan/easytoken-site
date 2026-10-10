@@ -6,7 +6,9 @@ One Cloudflare Worker serves the static site and the API.
 - `/api/*` — dashboard API, HttpOnly session cookie
 - everything else — static files in this folder
 
-Code: `worker/` (index = router, auth, tasks = media tasks + refunds + webhooks, chat, billing = Stripe, kie = upstream client, catalog = prices + upstream mapping). Schema: `migrations/`. All prices (media, audio and chat) are kie.ai's list price × 1.15 (`MARKUP` in `worker/catalog.js`), per model and per option (resolution, duration, mode, audio, input images). Each model's `kie` table is a snapshot of kie.ai/pricing, saved with kie's "Official / Fal Price" in `scripts/kie-snapshot.json`; the site's `official` prices come from that column (null where kie shows N/A). `node scripts/kie-prices.mjs` compares catalog and snapshot with kie's live price list (free, no key), `--snapshot` rewrites the snapshot and `--markdown` prints the price table. `POST /v1/quote` returns a task's price without running it. The example prices on the site live in `assets/data.js` and must match `worker/catalog.js`; `node --test tests/*.test.mjs` checks this (and runs the task/billing flow against an in-memory D1 with kie mocked) in CI. Node 24+ (uses `node:sqlite`).
+Code: `worker/` (index = router, auth, tasks = media tasks + refunds + webhooks, billing = Stripe, kie = upstream client, catalog = prices + upstream mapping). Schema: `migrations/`. All prices (media and audio) are kie.ai's list price × 1.15 (`MARKUP` in `worker/catalog.js`), per model and per option (resolution, duration, mode, audio, input images). Each model's `kie` table is a snapshot of kie.ai/pricing, saved with kie's "Official / Fal Price" in `scripts/kie-snapshot.json`; the site's `official` prices come from that column (null where kie shows N/A). `node scripts/kie-prices.mjs` compares catalog and snapshot with kie's live price list (free, no key), `--snapshot` rewrites the snapshot and `--markdown` prints the price table. `POST /v1/quote` returns a task's price without running it. The example prices on the site live in `assets/data.js` and must match `worker/catalog.js`; `node --test tests/*.test.mjs` checks this (and runs the task/billing flow against an in-memory D1 with kie mocked) in CI. Node 24+ (uses `node:sqlite`).
+
+There are no chat (text) models: `/v1/chat/completions` returns 404 `model_not_found` for every request.
 
 Money is stored in micro-dollars. A task debits the balance when created and is refunded automatically if it fails, never starts, or runs over 2 hours. A cron job runs every minute to poll open tasks and retry customer webhooks.
 
@@ -15,7 +17,6 @@ Money is stored in micro-dollars. A task debits the balance when created and is 
 ```
 wrangler secret put KIE_API_KEY            # media upstream
 wrangler secret put INTERNAL_SECRET        # signs kie callback URLs (any long random string)
-wrangler secret put CHAT_UPSTREAM_KEY      # OpenRouter key; chat returns 503 until set
 wrangler secret put STRIPE_SECRET_KEY      # top-ups return 503 until set
 wrangler secret put STRIPE_WEBHOOK_SECRET  # endpoint: https://easytoken.si/api/stripe/webhook (checkout.session.completed)
 ```

@@ -2,9 +2,8 @@
 import { fail, json, errorResponse, readJson, toUsd } from "./util.js";
 import { signup, login, logout, sessionUser, requireSession, requireApiKey, checkOrigin, publicUser, listKeys, addKey, revokeKey } from "./auth.js";
 import { createTask, getTaskRow, refreshTask, publicTask, upstreamCallback, sweep } from "./tasks.js";
-import { chatCompletions } from "./chat.js";
 import { checkout, stripeWebhook } from "./billing.js";
-import { allModels, mediaModel, chatModel, applyChatOverrides, quote } from "./catalog.js";
+import { allModels, mediaModel, quote } from "./catalog.js";
 
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, content-type", "access-control-allow-methods": "GET, POST, OPTIONS", "access-control-max-age": "86400" };
 const withCors = res => { const r = new Response(res.body, res); for (const [k, v] of Object.entries(CORS)) r.headers.set(k, v); return r; };
@@ -29,6 +28,8 @@ async function v1(request, env, ctx, path) {
   const method = request.method;
   if (path === "/v1/models" && method === "GET") return json({ object: "list", data: allModels() });
   if (path === "/v1/quote" && method === "POST") return json(priceQuote(await readJson(request)));
+  // Text (chat) models were removed; answer before auth so nothing is read, sent upstream or charged.
+  if (path === "/v1/chat/completions") fail(404, "model_not_found", "EasyToken does not offer chat (text) models. Video, image and audio models: GET /v1/models.");
   const { user, key } = await requireApiKey(request, env, ctx);
   const origin = env.PUBLIC_ORIGIN || new URL(request.url).origin;
   if (path === "/v1/tasks" && method === "POST") return json(publicTask(await createTask(env, ctx, { user, keyId: key.id, body: await readJson(request), origin })), 202);
@@ -38,7 +39,6 @@ async function v1(request, env, ctx, path) {
     if (!t || t.kind !== "media") fail(404, "not_found", "Task not found.");
     return json(publicTask(await freshTask(env, ctx, t)));
   }
-  if (path === "/v1/chat/completions" && method === "POST") return chatCompletions(env, ctx, { user, keyId: key.id, body: await readJson(request, 4 * 1024 * 1024) });
   if (path === "/v1/balance" && method === "GET") return json({ balance_usd: toUsd(user.balance) });
   fail(404, "not_found", `No route for ${method} ${path}.`);
 }
@@ -63,10 +63,6 @@ async function usage(env, user) {
 // Playground runs use the signed-in session instead of an API key and bill the same balance.
 async function playground(request, env, ctx, user, origin) {
   const { model, prompt, input } = await readJson(request);
-  if (chatModel(model)) {
-    const res = await chatCompletions(env, ctx, { user, keyId: null, body: { model, messages: [{ role: "user", content: String(prompt || "") }], max_tokens: 800 } });
-    return res;
-  }
   if (!mediaModel(model)) fail(404, "model_not_found", "Pick a model from the list.");
   const t = await createTask(env, ctx, { user, keyId: null, body: { model, input: { ...(input || {}), prompt: String(prompt || "") } }, origin });
   return json(publicTask(t), 202);
@@ -104,7 +100,6 @@ async function api(request, env, ctx, path) {
 
 export default {
   async fetch(request, env, ctx) {
-    applyChatOverrides(env);
     const url = new URL(request.url);
     const apiHost = url.hostname.startsWith("api.");
     let path = url.pathname.replace(/\/+$/, "") || "/";

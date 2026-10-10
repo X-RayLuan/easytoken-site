@@ -22,8 +22,7 @@
   "triggers": { "crons": ["* * * * *"] },
   "vars": {
     "PUBLIC_ORIGIN": "https://api.easytoken.si",
-    "SIGNUP_CREDIT_USD": "0.25",
-    "CHAT_UPSTREAM_BASE": "https://openrouter.ai/api/v1"
+    "SIGNUP_CREDIT_USD": "0.25"
   }
-  // Secrets (wrangler secret put): KIE_API_KEY, INTERNAL_SECRET, CHAT_UPSTREAM_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+  // Secrets (wrangler secret put): KIE_API_KEY, INTERNAL_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
 }

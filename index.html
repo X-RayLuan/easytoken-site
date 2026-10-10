@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>EasyToken · One API for every AI model</title>
-<meta name="description" content="EasyToken: one API key for the best video, image, audio and LLM models. Prices shown next to the official / fal price listed by Kie, and failed jobs cost nothing.">
+<meta name="description" content="EasyToken: one API key for the best video, image and audio models. Prices shown next to the official / fal price listed by Kie, and failed jobs cost nothing.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,9 +28,9 @@
   <section class="hero">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <div class="eyebrow">Video · Image · Audio · LLM</div>
+        <div class="eyebrow">Video · Image · Audio</div>
         <h1>Every model.<br>One <svg class="coin" aria-hidden="true"><use href="#coin"/></svg>key.</h1>
-        <p class="lede">EasyToken puts Veo, Seedance, Kling, GPT Image, Suno, Claude and more behind a single API key and a single bill. Every price is shown next to the official / fal price listed by Kie, and a failed job costs you nothing.</p>
+        <p class="lede">EasyToken puts Veo, Seedance, Kling, GPT Image, Suno and more behind a single API key and a single bill. Every price is shown next to the official / fal price listed by Kie, and a failed job costs you nothing.</p>
         <div class="cta-row">
           <a class="btn btn-primary" href="signup.html">Get your free API key</a>
           <a class="btn btn-ghost" href="#pricing">Compare prices</a>
@@ -82,7 +82,7 @@
           <div class="eyebrow">How it works</div>
           <h2>From key to first video in three calls.</h2>
         </div>
-        <p>Media jobs run asynchronously, so a long Veo render never ties up your server. Chat models answer in the same request.</p>
+        <p>Media jobs run asynchronously, so a long Veo render never ties up your server.</p>
       </div>
       <div class="steps">
         <div class="step"><div class="n">Step 1</div><h3>Create a key</h3><p>Sign up, claim your free credits, and copy one key that works for every model.</p></div>
@@ -99,7 +99,7 @@
           <div class="eyebrow">Why EasyToken</div>
           <h2>Built for teams that ship AI features.</h2>
         </div>
-        <p>You shouldn't need five vendor accounts, five invoices and five SDKs to put video, voice and chat in one product.</p>
+        <p>You shouldn't need five vendor accounts, five invoices and five SDKs to put video, images and voice in one product.</p>
       </div>
       <div class="features">
         <div class="feat">
@@ -130,36 +130,6 @@
     </div>
   </section>
 
-  <section class="rule">
-    <div class="wrap sdk">
-      <div>
-        <div class="eyebrow">Drop-in</div>
-        <h2>Already using the OpenAI SDK? Change two lines.</h2>
-        <p>Our chat endpoint speaks the OpenAI format, so existing code, LangChain apps and coding agents work after you swap the base URL and key.</p>
-        <ul>
-          <li>Python, Node, Go, or plain curl</li>
-          <li>Streaming, tool calls and JSON mode</li>
-          <li>Same key for video and image tasks</li>
-        </ul>
-      </div>
-      <div class="term-card">
-        <div class="bar"><span>app.py</span><button class="copy" data-copy="#sdk-code" type="button">Copy</button></div>
-<pre class="code" id="sdk-code"><span class="k">from</span> openai <span class="k">import</span> OpenAI
-
-client = OpenAI(
-    base_url=<span class="s">"https://api.easytoken.si/v1"</span>,
-    api_key=<span class="s">"et_live_..."</span>,
-)
-
-reply = client.chat.completions.create(
-    model=<span class="m">"claude-opus-5-5"</span>,
-    messages=[{<span class="s">"role"</span>: <span class="s">"user"</span>, <span class="s">"content"</span>: <span class="s">"Write a 15s ad script"</span>}],
-)
-print(reply.choices[0].message.content)</pre>
-      </div>
-    </div>
-  </section>
-
   <section id="faq" class="rule">
     <div class="wrap faq">
       <div>
@@ -182,7 +152,7 @@ print(reply.choices[0].message.content)</pre>
       <div class="closing">
         <div>
           <h2>Start with free credits.</h2>
-          <p>Create a key in under a minute and run your first video, image or chat request today.</p>
+          <p>Create a key in under a minute and run your first video, image or audio task today.</p>
         </div>
         <div class="cta-row">
           <a class="btn btn-primary" href="signup.html">Get your free API key</a>

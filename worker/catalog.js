@@ -1,5 +1,5 @@
 // Billing source of truth: what each public model costs and how it maps to the upstream request.
-// Every price (media and chat) is kie.ai's list price × MARKUP, per model and per option (resolution, duration, mode, audio…).
+// Every price is kie.ai's list price × MARKUP, per model and per option (resolution, duration, mode, audio…).
 // `kie` holds kie's USD price per unit, snapshot from kie.ai/pricing (public API: POST
 // https://api.kie.ai/client/v1/model-pricing/page) on 2026-10-10 and saved in scripts/kie-snapshot.json.
 // Re-check with `node scripts/kie-prices.mjs`.
@@ -302,26 +302,9 @@ export function quote(model, input) {
   return { up, charges, micros };
 }
 
-// USD per 1M tokens: `kie` is kie's chat price (same snapshot as media); `input`/`output` are kie × MARKUP.
-// `upstream` is still the OpenRouter model id (override with CHAT_MODEL_MAP); OpenRouter bills the provider's list
-// price, which is above these sale prices, so chat must move to kie before this pricing goes live.
-const CHAT = [
-  { id: "claude-opus-5-5", cat: "chat", kie: { input: 1.60, output: 8.00 }, upstream: "anthropic/claude-opus-5.5" },
-  { id: "gpt-5.5", cat: "chat", kie: { input: 1.40, output: 8.40 }, upstream: "openai/gpt-5.5" },
-  { id: "gemini-3-pro", cat: "chat", kie: { input: 0.50, output: 3.50 }, upstream: "google/gemini-3-pro" },
-];
-for (const m of CHAT) { m.input = saleMicros(m.kie.input) / 1e6; m.output = saleMicros(m.kie.output) / 1e6; }
-
 export const mediaModel = id => MEDIA.find(m => m.id === id) || null;
 export const mediaModels = () => MEDIA;
-export const chatModel = id => CHAT.find(m => m.id === id) || null;
-export const chatModels = () => CHAT;
 export const allModels = () => [
   ...MEDIA.map(m => ({ id: m.id, object: "model", type: m.cat, endpoint: "/v1/tasks",
     pricing: Object.entries(m.tiers).map(([option, t]) => ({ option, usd: t.micros / 1e6, per: t.per })) })),
-  ...CHAT.map(m => ({ id: m.id, object: "model", type: "chat", endpoint: "/v1/chat/completions", input_usd_per_1m: m.input, output_usd_per_1m: m.output })),
 ];
-export function applyChatOverrides(env) {
-  if (!env.CHAT_MODEL_MAP) return;
-  try { const map = JSON.parse(env.CHAT_MODEL_MAP); for (const m of CHAT) if (map[m.id]) m.upstream = map[m.id]; } catch {}
-}
