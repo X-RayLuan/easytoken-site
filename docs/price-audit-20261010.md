@@ -60,7 +60,7 @@
 
 ## 需要特别注意的问题
 
-1. **首页 official 值，8 个写错，2 个该删，其余 28 个是 null。** 写错的 8 个：veo-3.1 写 6.00，应为 3.20；seedance-2.5 写 2.37，应为 1.16；kling-3.0 写 0.98，应为 0.56；nano-banana-pro 写 0.15，那是 fal 价，官方是 0.134；flux-2-pro 写 0.05，应为 0.03；elevenlabs-v3 写 0.30，应为 0.08；claude-opus-5-5 写 25，应为 20；gpt-5.5 写 10，应为 30。该删的 2 个：gpt-image-2.5 写 0.25，官方没有按张价；suno-v6 写 0.10，Suno 没有公开 API 价。首页“−X%”标签是按这些值算的，所以 veo、seedance-2.5、kling-3.0、elevenlabs、claude 的省钱幅度都被夸大了，seedance-2.5 和 elevenlabs 实际上比官方贵。
+1. **首页 official 值，8 个写错，2 个该删，gemini-3-pro 数值对但模型已下线，其余 27 个是 null。** 写错的 8 个：veo-3.1 写 6.00，应为 3.20；seedance-2.5 写 2.37，应为 1.16；kling-3.0 写 0.98，应为 0.56；nano-banana-pro 写 0.15，那是 fal 价，官方是 0.134；flux-2-pro 写 0.05，应为 0.03；elevenlabs-v3 写 0.30，应为 0.08；claude-opus-5-5 写 25，应为 20；gpt-5.5 写 10，应为 30。该删的 2 个：gpt-image-2.5 写 0.25，官方没有按张价；suno-v6 写 0.10，Suno 没有公开 API 价。首页“−X%”标签是按这些值算的，所以 veo、seedance-2.5、kling-3.0、elevenlabs、claude 的省钱幅度都被夸大了，seedance-2.5 和 elevenlabs 实际上比官方贵。
 2. **比官方贵的模型：** elevenlabs-v3（+125%）、flux-2-flex 1K（+61%）、seedance-2.5（+57%）、seedance-2（+56%）、seedance-2-fast（+18%）、imagen-4（+15%）、wan-3.0-prime（+4%）、seedream-5-flash（+4%）、pixverse-v6（+3%）。其中 Seedance 全系列、elevenlabs 和 flux-2-flex 1K 的 kie 进价本身就高于官方价（例如 Seedance 2.5 720p kie $0.315/s，官方 $0.231/s），只降加价率压不到官方价以下，要压就得换上游，比如直连 BytePlus ModelArk。
 3. **Chat 可能在亏钱：** gpt-5.5 卖输入 $1.6 / 输出 $8，官方是 $5 / $30；gemini-3-pro 卖 $1.92 / $9.6，官方 3.1 Pro 是 $2 / $12；claude-opus-5-5 和官方同价（$4 / $20）。这三个都通过 OpenRouter 调用，OpenRouter 按官方价收费，所以前两个每次调用都在倒贴，Claude 也没有毛利。
 4. **gemini-3-pro 已下线：** Google 在 2026-03-09 停了 gemini-3-pro-preview，后继是 3.1 Pro。catalog.js 里的 upstream `google/gemini-3-pro` 需要确认现在还能不能调通。
