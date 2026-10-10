@@ -87,9 +87,12 @@ const $ = (s, el = document) => el.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 // Whole cents print as $0.05; anything finer keeps up to 6 decimals so prices show exactly what is billed.
 const usd = n => { const s = Math.abs(n * 100 - Math.round(n * 100)) < 1e-6 ? n.toFixed(2) : String(+n.toFixed(6)); return "$" + (!s.includes(".") ? s + ".00" : /\.\d$/.test(s) ? s + "0" : s); };
+// The comparison price everywhere on the site is kie.ai's "Official / Fal Price" column, never the vendor's own API price.
+const OFF_LABEL = "Official / Fal price";
+const OFF_NOTE = "vs. official / fal price, as listed by Kie";
 const pct = m => m.official ? Math.round((1 - m.ours / m.official) * 100) : null;
 const offUsd = m => m.official ? usd(m.official) : "–";
-// Savings only when we are below the official price; a few models cost slightly more than kie's listed price.
+// Savings only when we are below that price; a few models cost slightly more than it, and N/A prices show no pill.
 const save = m => pct(m) > 0 ? pct(m) : null;
 const savePill = m => save(m) == null ? "" : `<span class="pill">−${save(m)}%</span>`;
 const modelById = id => MODELS.find(m => m.id === id);

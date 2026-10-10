@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Models · EasyToken</title>
-<meta name="description" content="Every video, image, audio and chat model on EasyToken, with official and EasyToken prices side by side.">
+<meta name="description" content="Every video, image, audio and chat model on EasyToken, with EasyToken prices next to the official / fal price listed by Kie.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="assets/style.css">
@@ -39,7 +39,7 @@ function render(){
   $("#cards").innerHTML = list.length ? list.map(m => `<article class="mcard">
     <header><div><h3>${esc(m.name)}</h3><div class="prov">${esc(m.provider)}</div></div><span class="badge">${m.cat}</span></header>
     <p>${esc(m.blurb)}</p>
-    <div class="price"><b>${usd(m.ours)}</b>${m.official ? `<s>${usd(m.official)}</s>` : ""}${savePill(m)}</div>
+    <div class="price"><b>${usd(m.ours)}</b><span class="muted" title="${OFF_NOTE}">${OFF_LABEL}: ${save(m) ? `<s>${offUsd(m)}</s>` : offUsd(m)}</span>${savePill(m)}</div>
     <div class="meta"><span>per ${esc(m.unit)}</span><span class="mono">${esc(m.id)}</span></div>
     ${PRICING[m.id] ? `<details class="small"><summary>All prices</summary><table class="small">${PRICING[m.id].map(p => `<tr><td>${esc(p.option)}</td><td class="r">${usd(p.usd)} / ${esc(p.per)}</td></tr>`).join("")}</table></details>` : ""}
     <div class="actions"><a class="btn btn-primary" href="playground.html?model=${m.id}">Try it</a><a class="btn btn-ghost" href="docs.html#${m.chat ? "chat" : "tasks"}">API reference</a></div>

@@ -28,7 +28,7 @@
       <label class="field" id="opt-wrap">Aspect ratio
         <select class="input" id="opt"></select>
       </label>
-      <div class="pg-cost"><span class="muted">Cost per run</span><span class="num"><s class="muted" id="c-off"></s> <b id="c-ours"></b></span></div>
+      <div class="pg-cost"><span class="muted">Cost per run</span><span class="num"><span class="muted" id="c-off-label"></span> <span class="muted" id="c-off"></span> <b id="c-ours"></b></span></div>
       <button class="btn btn-primary btn-block" id="run" type="submit">Run</button>
       <div class="demo-note small" id="demo-note">Preview mode. Runs here are simulated and free. <a href="signup.html">Create an account</a> to run real tasks.</div>
     </form>
@@ -61,7 +61,8 @@ function sync(){
   const opts = OPTS[m.cat];
   $("#opt-wrap").hidden = !opts;
   $("#opt").innerHTML = (opts || []).map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
-  $("#c-off").textContent = m.official ? usd(m.official) : "";
+  $("#c-off-label").textContent = OFF_LABEL + ":";
+  $("#c-off").innerHTML = save(m) ? `<s>${offUsd(m)}</s>` : offUsd(m);
   $("#c-ours").textContent = m.chat ? `${usd(m.ours)} / 1M tok` : usd(m.ours);
   $("#code").innerHTML = snippet(m);
   $("#result").textContent = "Your output will appear here.";

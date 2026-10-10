@@ -17,7 +17,7 @@ const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg}: ${a} != $
 const kieOfficial = m => {
   if (m.chat) return snap[CHAT_SOURCE[m.id].output].official;
   const parts = quote(mediaModel(m.id), m.input).charges.map(([tier, n]) => [snap[SOURCE[m.id][tier]].official, n]);
-  return parts.some(([o]) => o == null) ? null : parts.reduce((a, [o, n]) => a + o * n, 0);
+  return parts.some(([o]) => o == null) ? null : +parts.reduce((a, [o, n]) => a + o * n, 0).toFixed(6);
 };
 
 test("every official price in data.js is kie's listed official price for the same options, or null when kie lists none", () => {
@@ -48,4 +48,40 @@ test("every sale price is kie × 1.15 (media per option, chat per input and outp
 test("the snapshot covers every source record and nothing else", () => {
   const used = new Set([...Object.values(SOURCE), ...Object.values(CHAT_SOURCE)].flatMap(Object.values));
   assert.deepEqual([...used].sort(), Object.keys(snap).sort());
+});
+
+// Page helpers from assets/data.js, so the labels and savings are tested as the pages render them.
+const page = vm.runInNewContext(readFileSync(new URL("../assets/data.js", import.meta.url), "utf8").split("// Highlighted curl")[0]
+  + "; ({ MODELS, OFF_LABEL, pct, save, offUsd, savePill })", { document: {} });
+
+test("savings are measured against kie's Official / Fal price; N/A shows – and no pill", () => {
+  assert.equal(page.OFF_LABEL, "Official / Fal price");
+  for (const m of page.MODELS) {
+    const off = kieOfficial(m);
+    if (off == null) {
+      assert.equal(page.offUsd(m), "–", m.id);
+      assert.equal(page.save(m), null, m.id);
+      assert.equal(page.savePill(m), "", m.id);
+    } else {
+      assert.equal(page.pct(m), Math.round((1 - m.ours / off) * 100), m.id);
+      if (m.ours >= off) assert.equal(page.savePill(m), "", `${m.id} is not cheaper, so no pill`);
+      else assert.match(page.savePill(m), new RegExp(`−${page.pct(m)}%`), m.id);
+    }
+  }
+});
+
+test("every comparison on the site is labelled Official / Fal price and no page claims to beat the vendors' own APIs", () => {
+  const read = f => readFileSync(new URL(`../${f}`, import.meta.url), "utf8");
+  const pages = ["index.html", "models.html", "playground.html", "dashboard.html", "docs.html"];
+  for (const f of pages) {
+    const html = read(f);
+    assert.doesNotMatch(html, /<(th|small)[^>]*>\s*Official\s*</i, `${f} has a bare "Official" column header`);
+    assert.doesNotMatch(html, /cheaper than (the )?official|lower rates than official|less than official prices/i, `${f} claims to beat official APIs`);
+  }
+  assert.match(read("index.html"), /<th class="r">Official \/ Fal price<\/th>/);
+  assert.match(read("index.html"), /<small>Official \/ Fal price<\/small>/);
+  assert.match(read("index.html"), /vs\. official \/ fal price, as listed by Kie/);
+  assert.match(read("models.html"), /OFF_LABEL/);
+  assert.match(read("playground.html"), /OFF_LABEL/);
+  assert.match(read("dashboard.html"), /official \/ fal price listed by Kie/);
 });

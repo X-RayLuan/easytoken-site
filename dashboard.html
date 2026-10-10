@@ -87,7 +87,7 @@ function overview(u){
   const spent = days.reduce((a, b) => a + b, 0), compared = MODELS.filter(m => m.official), saved = compared.reduce((a, m) => a + pct(m), 0) / compared.length;
   $("#k-bal").textContent = usd(me.balance_usd);
   $("#k-spent").textContent = usd(spent);
-  $("#k-saved").textContent = spent ? `≈ ${usd(spent / (1 - saved / 100) - spent)} less than official prices` : "Run a task to see your savings";
+  $("#k-saved").textContent = spent ? `≈ ${usd(spent / (1 - saved / 100) - spent)} less than the official / fal price listed by Kie` : "Run a task to see your savings";
   $("#k-tasks").textContent = u.tasks;
   $("#k-failed").textContent = `${u.failed} failed, refunded automatically`;
   const W = 700, H = 200, pad = 28, max = Math.max(...days) * 1.15 || 1, bw = (W - pad) / days.length;
