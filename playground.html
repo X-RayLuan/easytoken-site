@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Playground · EasyToken</title>
 <meta name="description" content="Try any EasyToken model in the browser and copy the exact API request.">
-<link rel="canonical" href="https://easytoken.si/playground.html">
+<link rel="canonical" href="https://easytoken.si/playground">
 <meta name="robots" content="noindex,follow">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -32,7 +32,7 @@
       </label>
       <div class="pg-cost"><span class="muted">Cost per run</span><span class="num"><span class="muted" id="c-off-label"></span> <span class="muted" id="c-off"></span> <b id="c-ours"></b></span></div>
       <button class="btn btn-primary btn-block" id="run" type="submit">Run</button>
-      <div class="demo-note small" id="demo-note">Preview mode. Runs here are simulated and free. <a href="signup.html">Create an account</a> to run real tasks.</div>
+      <div class="demo-note small" id="demo-note">Preview mode. Runs here are simulated and free. <a href="/signup">Create an account</a> to run real tasks.</div>
     </form>
     <div class="pg-out">
       <div class="surface result" id="result">Your output will appear here.</div>
@@ -106,7 +106,7 @@ function runDemo(m){
       clearInterval(t); btn.disabled = false;
       const shape = m.cat === "image" ? "frame square" : "frame";
       const label = m.cat === "audio" ? "♪ audio.mp3 · preview" : m.cat === "video" ? "▶ output.mp4 · preview" : "output.png · preview";
-      out.innerHTML = `<div style="width:100%;display:grid;gap:12px;justify-items:center"><div class="${shape}">${label}<br>${esc($("#prompt").value.slice(0,80))}</div><div class="small">Simulated result. <a href="signup.html">Create an account</a> to run it for real: ${usd(m.ours)}, $0 if it fails.</div></div>`;
+      out.innerHTML = `<div style="width:100%;display:grid;gap:12px;justify-items:center"><div class="${shape}">${label}<br>${esc($("#prompt").value.slice(0,80))}</div><div class="small">Simulated result. <a href="/signup">Create an account</a> to run it for real: ${usd(m.ours)}, $0 if it fails.</div></div>`;
     }
   }, 120);
 }
@@ -118,7 +118,7 @@ $("#pg-form").addEventListener("submit", async e => {
   btn.disabled = true;
   if (!live) return runDemo(m);
   try { await runLive(m); }
-  catch (err) { $("#result").innerHTML = `<div class="small">${esc(err.message)}${err.code === "insufficient_credits" ? ` <a href="dashboard.html#billing">Add credits</a>` : ""}</div>`; }
+  catch (err) { $("#result").innerHTML = `<div class="small">${esc(err.message)}${err.code === "insufficient_credits" ? ` <a href="/dashboard#billing">Add credits</a>` : ""}</div>`; }
   btn.disabled = false;
 });
 sync();

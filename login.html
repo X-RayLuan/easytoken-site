@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Log in · EasyToken</title>
-<link rel="canonical" href="https://easytoken.si/login.html">
+<link rel="canonical" href="https://easytoken.si/login">
 <meta name="robots" content="noindex,follow">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -21,7 +21,7 @@
       <label class="field">Password<input class="input" id="pw" type="password" autocomplete="current-password" required></label>
       <div class="err" id="err" role="alert"></div>
       <button class="btn btn-primary btn-block" type="submit">Log in</button>
-      <p class="small muted">New to EasyToken? <a href="signup.html">Create an account</a> and get free credits.</p>
+      <p class="small muted">New to EasyToken? <a href="/signup">Create an account</a> and get free credits.</p>
     </form>
   </div>
   <div class="auth-side">
@@ -45,7 +45,7 @@ $("#f").addEventListener("submit", async e => {
   try {
     await api("/login", { email, password: $("#pw").value });
     Account.set({ email });
-    location.href = "dashboard.html";
+    location.href = "/dashboard";
   } catch (err) { $("#err").textContent = err.message; btn.disabled = false; }
 });
 </script>

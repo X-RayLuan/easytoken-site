@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Dashboard · EasyToken</title>
-<link rel="canonical" href="https://easytoken.si/dashboard.html">
+<link rel="canonical" href="https://easytoken.si/dashboard">
 <meta name="robots" content="noindex,follow">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -21,10 +21,10 @@
   </aside>
 
   <div>
-    <div class="demo-note small" id="sample-note" hidden style="margin-bottom:20px">You're viewing a sample account. <a href="signup.html">Create an account</a> to get your own key and free credits.</div>
+    <div class="demo-note small" id="sample-note" hidden style="margin-bottom:20px">You're viewing a sample account. <a href="/signup">Create an account</a> to get your own key and free credits.</div>
 
     <section class="dash-panel" data-panel="overview" style="padding:0">
-      <div class="row"><h2 id="hello">Overview</h2><a class="btn btn-ghost" href="playground.html">Open playground</a></div>
+      <div class="row"><h2 id="hello">Overview</h2><a class="btn btn-ghost" href="/playground">Open playground</a></div>
       <div class="kpis">
         <div class="surface kpi"><small>Credit balance</small><b id="k-bal"></b><span>Top up any time in Billing</span></div>
         <div class="surface kpi"><small>Spent, last 14 days</small><b id="k-spent"></b><span id="k-saved"></span></div>
@@ -100,7 +100,7 @@ function overview(u){
   $("#tasks").innerHTML = u.recent.length ? u.recent.map(r => { const m = modelById(r.model);
     const out = r.result?.url ? ` <a class="small" href="${esc(r.result.url)}" target="_blank" rel="noopener">output</a>` : "";
     return `<tr><td class="mono small">${esc(r.id)}${out}</td><td>${esc(m ? m.name : r.model)}</td><td><span class="status-pill ${r.status === "succeeded" ? "done" : esc(r.status)}">${esc(r.status)}</span></td><td class="r">${r.status === "failed" ? "$0 refunded" : usd(r.cost_usd)}</td><td class="r muted small">${ago(r.created_at)}</td></tr>`; }).join("")
-    : `<tr><td colspan="5" class="muted">No tasks yet. <a href="playground.html">Try the playground</a> or send your first API request.</td></tr>`;
+    : `<tr><td colspan="5" class="muted">No tasks yet. <a href="/playground">Try the playground</a> or send your first API request.</td></tr>`;
 }
 
 function keys(){
@@ -138,7 +138,7 @@ $("#pay").addEventListener("click", async () => {
   catch (err) { toast(err.message); $("#pay").disabled = false; }
 });
 
-$("#logout").addEventListener("click", async () => { try { await api("/logout", {}); } catch {} Account.clear(); location.href = "index.html"; });
+$("#logout").addEventListener("click", async () => { try { await api("/logout", {}); } catch {} Account.clear(); location.href = "/"; });
 $("#side").addEventListener("click", e => {
   const b = e.target.closest("[data-tab]"); if (!b) return;
   document.querySelectorAll("#side [data-tab]").forEach(x => x.setAttribute("aria-selected", x === b));

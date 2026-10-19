@@ -11,16 +11,28 @@ test('sitemap entries are indexable canonical static assets', () => {
   const sitemap = read('sitemap.xml');
   assert.match(sitemap, /^<\?xml version="1.0" encoding="UTF-8"\?>/);
   const urls = [...sitemap.matchAll(/<loc>https:\/\/easytoken\.si\/(.*?)<\/loc>/g)].map(m => m[1]);
-  assert.deepEqual(urls, ['', 'models.html', 'docs.html', 'privacy.html', 'terms.html']);
+  assert.deepEqual(urls, ['', 'models', 'docs', 'privacy', 'terms']);
   for (const url of urls) {
-    const html = read(url || 'index.html');
+    const html = read(url ? `${url}.html` : 'index.html');
     assert.ok(html.includes(`<link rel="canonical" href="https://easytoken.si/${url}">`));
     assert.doesNotMatch(html, /<meta name="robots" content="noindex/);
-    assert.match(html, /<nav aria-label="Main"><a href="models.html">/);
+    assert.match(html, /<nav aria-label="Main"><a href="\/models">/);
   }
   assert.match(read('robots.txt'), /Sitemap: https:\/\/easytoken\.si\/sitemap.xml/);
   for (const page of ['login', 'signup', 'dashboard', 'playground', 'status'])
     assert.match(read(`${page}.html`), /<meta name="robots" content="noindex,follow">/);
+});
+
+test('every page uses the served extensionless canonical and metadata URLs', () => {
+  for (const page of ['index', 'models', 'docs', 'privacy', 'terms', 'login', 'signup', 'dashboard', 'playground', 'status']) {
+    const html = read(`${page}.html`);
+    const url = `https://easytoken.si${page === 'index' ? '/' : `/${page}`}`;
+    assert.ok(html.includes(`<link rel="canonical" href="${url}">`), page);
+    assert.doesNotMatch(html, /(?:href|content)="https:\/\/easytoken\.si\/[^"#?]*\.html(?:["#?])/);
+    assert.doesNotMatch(html, /href="\/?(?:index|models|docs|privacy|terms|login|signup|dashboard|playground|status)\.html(?:["#?])/);
+    if (html.includes('<meta property="og:url"'))
+      assert.ok(html.includes(`<meta property="og:url" content="${url}">`), page);
+  }
 });
 
 test('HTML pricing and docs model IDs match the source catalog without JS', () => {
@@ -31,8 +43,8 @@ test('HTML pricing and docs model IDs match the source catalog without JS', () =
   assert.equal((fallback.match(/<article class="mcard" id="/g) || []).length, allModels().length);
   for (const m of models) {
     assert.ok(catalog.includes(`<article class="mcard" id="${m.id}">`), m.id);
-    assert.ok(home.includes(`href="models.html#${m.id}"`), m.id);
-    assert.ok(docs.includes(`<a href="models.html#${m.id}"><code>${m.id}</code></a>`), m.id);
+    assert.ok(home.includes(`href="/models#${m.id}"`), m.id);
+    assert.ok(docs.includes(`<a href="/models#${m.id}"><code>${m.id}</code></a>`), m.id);
     const card = fallback.split(`<article class="mcard" id="${m.id}">`)[1]?.split('</article>')[0];
     assert.ok(card, m.id);
     const price = '$' + (Number.isInteger(m.ours * 100) ? m.ours.toFixed(2) : String(+m.ours.toFixed(6)));
@@ -76,4 +88,12 @@ test('public raw HTML exposes legal identity and parseable Organization schema',
     assert.match(read(file), /Last updated: 2026-10-19/);
     assert.doesNotMatch(read(file), /Template text|legal@easytoken|privacy@easytoken/);
   }
+});
+
+
+test('asset exclusions prevent publishing repository internals', () => {
+  const ignored = read('.assetsignore').split(/\r?\n/).filter(Boolean);
+  for (const path of ['docs', 'docs/', 'README.md', '*.md', 'worker', 'scripts', 'tests', '.github'])
+    assert.ok(ignored.includes(path), `${path} must be excluded from static assets`);
+  assert.ok(read('docs/claim-ledger.md').length > 0, 'claim ledger stays in the repository');
 });
