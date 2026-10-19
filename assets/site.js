@@ -16,7 +16,7 @@
   if (f) f.outerHTML = `<footer><div class="wrap">
     <a class="brand" href="index.html">${coin.replace(/26/g,"22")}EasyToken</a>
     <nav aria-label="Footer"><a href="models.html">Models</a><a href="index.html#pricing">Pricing</a><a href="docs.html">Docs</a><a href="status.html">Status</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a></nav>
-    <span>© 2026 EasyToken · easytoken.si</span>
+    <span>© 2026 EasyToken · AI AGENT AUTOMATION LLC · 30 N Gould St Ste R, Sheridan, WY 82801, USA · <a href="mailto:hello@easytoken.si">hello@easytoken.si</a></span>
   </div></footer>`;
 
   // Copy buttons: <button data-copy="#selector">

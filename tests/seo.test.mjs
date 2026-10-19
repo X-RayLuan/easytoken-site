@@ -44,3 +44,36 @@ test('HTML pricing and docs model IDs match the source catalog without JS', () =
   assert.match(home, /snapshot 2026-10-10/);
   assert.equal((docs.match(/<h1>/g) || []).length, 1);
 });
+
+test('robot groups allow search and AI crawlers to read public pages while excluding API routes', () => {
+  const robots = read('robots.txt');
+  const groups = robots.split(/\n\s*\n/).filter(g => g.includes('User-agent:'));
+  const bots = ['*', 'Googlebot', 'Bingbot', 'OAI-SearchBot', 'ChatGPT-User', 'PerplexityBot', 'Perplexity-User', 'Claude-SearchBot', 'Claude-User', 'GPTBot', 'ClaudeBot', 'Google-Extended', 'CCBot'];
+  for (const bot of bots) {
+    const group = groups.find(g => g.split('\n').includes(`User-agent: ${bot}`));
+    assert.ok(group, bot);
+    assert.match(group, /^Allow: \/$/m);
+    assert.match(group, /^Disallow: \/api\/$/m);
+    assert.match(group, /^Disallow: \/v1\/$/m);
+    assert.doesNotMatch(group, /Disallow: \/(?:models|docs|privacy|terms|login)\.html/);
+  }
+});
+
+test('public raw HTML exposes legal identity and parseable Organization schema', () => {
+  const home = read('index.html');
+  const schema = JSON.parse(home.match(/<script type="application\/ld\+json">([^<]+)<\/script>/)?.[1]);
+  assert.deepEqual(schema, {
+    '@context': 'https://schema.org', '@type': 'Organization', name: 'EasyToken',
+    legalName: 'AI AGENT AUTOMATION LLC', email: 'hello@easytoken.si', url: 'https://easytoken.si/'
+  });
+  for (const file of ['index.html', 'models.html', 'docs.html', 'privacy.html', 'terms.html']) {
+    const html = read(file);
+    assert.match(html, /<footer class="legal-footer wrap">/);
+    assert.match(html, /AI AGENT AUTOMATION LLC · 30 N Gould St Ste R, Sheridan, WY 82801, USA/);
+    assert.match(html, /mailto:hello@easytoken\.si/);
+  }
+  for (const file of ['privacy.html', 'terms.html']) {
+    assert.match(read(file), /Last updated: 2026-10-19/);
+    assert.doesNotMatch(read(file), /Template text|legal@easytoken|privacy@easytoken/);
+  }
+});
