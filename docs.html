@@ -3,14 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Docs · EasyToken</title>
-<meta name="description" content="EasyToken API reference: authentication, tasks, webhooks, errors and limits.">
+<title>Media API Docs: Tasks, Quotes &amp; Webhooks | EasyToken</title>
+<meta name="description" content="Integrate video, image and audio tasks with EasyToken. See model IDs, quote validation, billing, refunds and webhooks. No chat or text models.">
+<link rel="canonical" href="https://easytoken.si/docs.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Media API Docs: Tasks, Quotes &amp; Webhooks | EasyToken">
+<meta property="og:description" content="Integrate video, image and audio tasks with EasyToken. See model IDs, quote validation, billing, refunds and webhooks. No chat or text models.">
+<meta property="og:url" content="https://easytoken.si/docs.html">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Media API Docs: Tasks, Quotes &amp; Webhooks | EasyToken">
+<meta name="twitter:description" content="Integrate video, image and audio tasks with EasyToken. See model IDs, quote validation, billing, refunds and webhooks. No chat or text models.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="docs">
-<div id="site-header"></div>
+<div id="site-header"><header class="nav"><div class="wrap"><a class="brand" href="/">EasyToken .si</a><nav aria-label="Main"><a href="models.html">Models</a><a href="index.html#pricing">Pricing</a><a href="playground.html">Playground</a><a href="docs.html">Docs</a></nav><a href="login.html">Log in</a><a class="btn btn-primary" href="signup.html">Get API key</a></div></header></div>
 <main class="wrap docs">
   <aside aria-label="Docs sections">
     <div class="eyebrow">Get started</div>
@@ -28,6 +36,8 @@
   </aside>
 
   <article class="prose">
+    <h1>EasyToken video, image and audio API documentation</h1>
+    <p>Media models only. Chat and text models are not offered.</p>
     <h2 id="quickstart">Quickstart</h2>
     <p>The API lives at <code>https://api.easytoken.si/v1</code>. Every model uses the same key. Video, image and audio models run as <strong>tasks</strong>: you create one, then receive the result by webhook or by polling.</p>
     <ol>
@@ -54,7 +64,7 @@
       <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
       <tbody>
         <tr><td><code>model</code></td><td>string</td><td>Model ID, e.g. <code>veo-3.1</code>. See <a href="#models">Model IDs</a>.</td></tr>
-        <tr><td><code>input</code></td><td>object</td><td>Model-specific input. Every model accepts <code>prompt</code> (ElevenLabs also takes <code>text</code> and <code>voice</code>). Video and image models accept <code>aspect_ratio</code> and <code>image_urls</code> (https links) for image-to-video or editing. Price-setting options are <code>resolution</code> (e.g. <code>720p</code>, <code>1080p</code>, <code>4k</code>; images <code>1K</code>/<code>2K</code>/<code>4K</code>), <code>duration</code> in seconds, <code>mode</code> (Veo <code>quality</code>/<code>fast</code>/<code>lite</code>, Kling 3.0 <code>std</code>/<code>pro</code>/<code>4K</code>, Hailuo <code>standard</code>/<code>pro</code>, Imagen <code>fast</code>/<code>standard</code>/<code>ultra</code>) and audio (<code>sound</code> or <code>generate_audio</code>). Suno accepts <code>style</code>, <code>lyrics</code>, <code>title</code> and <code>instrumental</code>. Options a model cannot honour are refused with 422 before you are charged, never silently changed: e.g. Veo 3.1 is 8s only, Wan 2.6 takes 1 input image, Grok Imagine Video takes up to 7 images (1 at 1080p).</td></tr>
+        <tr><td><code>input</code></td><td>object</td><td>Model-specific input. Inputs vary by model; consult <a href="models.html">the catalog</a> and validate a request with <code>POST /v1/quote</code> before creating a task. Video and image models accept <code>aspect_ratio</code> and <code>image_urls</code> (https links) for image-to-video or editing. Price-setting options are <code>resolution</code> (e.g. <code>720p</code>, <code>1080p</code>, <code>4k</code>; images <code>1K</code>/<code>2K</code>/<code>4K</code>), <code>duration</code> in seconds, <code>mode</code> (Veo <code>quality</code>/<code>fast</code>/<code>lite</code>, Kling 3.0 <code>std</code>/<code>pro</code>/<code>4K</code>, Hailuo <code>standard</code>/<code>pro</code>, Imagen <code>fast</code>/<code>standard</code>/<code>ultra</code>) and audio (<code>sound</code> or <code>generate_audio</code>). Suno accepts <code>style</code>, <code>lyrics</code>, <code>title</code> and <code>instrumental</code>. Unsupported options can return 422 before a task is charged; check the quote and task response: e.g. Veo 3.1 is 8s only, Wan 2.6 takes 1 input image, Grok Imagine Video takes up to 7 images (1 at 1080p).</td></tr>
         <tr><td><code>callback_url</code></td><td>string</td><td>Optional public https URL. We POST the finished task here.</td></tr>
         <tr><td><code>metadata</code></td><td>object</td><td>Optional. Returned unchanged, useful for your own IDs.</td></tr>
       </tbody></table></div>
@@ -68,7 +78,7 @@
 }</pre></div>
 
     <h2 id="get-task">Get a task</h2>
-    <p><code>GET /v1/tasks/{id}</code> returns the current state. Output links stay valid for 14 days, so copy files you want to keep. <code>status</code> moves through <code>queued</code> → <code>running</code> → <code>succeeded</code> or <code>failed</code>. Poll every 5 to 10 seconds, or use a webhook instead.</p>
+    <p><code>GET /v1/tasks/{id}</code> returns the current state. Copy output files you want to keep; retention terms require owner confirmation. <code>status</code> moves through <code>queued</code> → <code>running</code> → <code>succeeded</code> or <code>failed</code>. Poll every 5 to 10 seconds, or use a webhook instead.</p>
     <div class="term-card"><div class="bar"><span>succeeded</span></div>
 <pre class="code">{
   "id": <span class="s">"task_8f2kq1x"</span>,
@@ -81,8 +91,44 @@
     <p>When you pass <code>callback_url</code>, we send the same body as <a href="#get-task">Get a task</a> once the task finishes. Each request carries an <code>X-EasyToken-Signature</code> header: an HMAC-SHA256 of the raw body with your webhook secret. Reply with any 2xx within 10 seconds; we retry up to 5 times with backoff.</p>
 
     <h2 id="models">Model IDs</h2>
-    <p><code>GET /v1/models</code> returns this list as JSON with the price of every option (resolution, duration, mode, audio); <code>GET /v1/balance</code> returns your credit balance. The price below is for each model's default options.</p>
-    <div class="table-box"><table><thead><tr><th>Model ID</th><th>Type</th><th>Endpoint</th><th class="r">Price</th></tr></thead><tbody id="model-rows"></tbody></table></div>
+    <p><code>GET /v1/models</code> returns this list as JSON with the price of every option (resolution, duration, mode, audio); <code>GET /v1/balance</code> returns your credit balance. The example prices below use the catalog inputs (snapshot 2026-10-10); quote your chosen options for a current price.</p>
+    <div class="table-box"><table><thead><tr><th>Model ID</th><th>Type</th><th>Endpoint</th><th class="r">Price</th></tr></thead><tbody id="model-rows"><!-- prerender:models:start -->
+<tr><td><a href="models.html#veo-3.1"><code>veo-3.1</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$1.46625 <span class="muted small">/ 8s clip, 1080p, quality</span></td></tr>
+<tr><td><a href="models.html#seedance-2.5"><code>seedance-2.5</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$1.81125 <span class="muted small">/ 5s clip, 720p</span></td></tr>
+<tr><td><a href="models.html#seedance-2"><code>seedance-2</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$1.17875 <span class="muted small">/ 5s clip, 720p</span></td></tr>
+<tr><td><a href="models.html#seedance-2-fast"><code>seedance-2-fast</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.713 <span class="muted small">/ 5s clip, 720p</span></td></tr>
+<tr><td><a href="models.html#kling-3.0"><code>kling-3.0</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.5175 <span class="muted small">/ 5s clip, 1080p (pro), no audio</span></td></tr>
+<tr><td><a href="models.html#kling-3.0-turbo"><code>kling-3.0-turbo</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.646875 <span class="muted small">/ 5s clip, 1080p</span></td></tr>
+<tr><td><a href="models.html#kling-2.6"><code>kling-2.6</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.31625 <span class="muted small">/ 5s clip, no audio</span></td></tr>
+<tr><td><a href="models.html#wan-3.0"><code>wan-3.0</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.92 <span class="muted small">/ 5s clip, 1080p</span></td></tr>
+<tr><td><a href="models.html#wan-3.0-prime"><code>wan-3.0-prime</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$1.449 <span class="muted small">/ 5s clip, 1080p</span></td></tr>
+<tr><td><a href="models.html#wan-2.7"><code>wan-2.7</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.69 <span class="muted small">/ 5s clip, 1080p</span></td></tr>
+<tr><td><a href="models.html#wan-2.6"><code>wan-2.6</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.600875 <span class="muted small">/ 5s clip, 1080p</span></td></tr>
+<tr><td><a href="models.html#hailuo-2.3"><code>hailuo-2.3</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.1725 <span class="muted small">/ 6s clip, 768p, standard</span></td></tr>
+<tr><td><a href="models.html#minimax-h3"><code>minimax-h3</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.276 <span class="muted small">/ 6s clip, 768p</span></td></tr>
+<tr><td><a href="models.html#grok-imagine-video"><code>grok-imagine-video</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.15525 <span class="muted small">/ 6s clip, 720p</span></td></tr>
+<tr><td><a href="models.html#pixverse-v6"><code>pixverse-v6</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.207 <span class="muted small">/ 5s clip, 720p, no audio</span></td></tr>
+<tr><td><a href="models.html#happyhorse-1.1"><code>happyhorse-1.1</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.83375 <span class="muted small">/ 5s clip, 1080p</span></td></tr>
+<tr><td><a href="models.html#gpt-image-2.5"><code>gpt-image-2.5</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.0575 <span class="muted small">/ image, 2K</span></td></tr>
+<tr><td><a href="models.html#gpt-image-2"><code>gpt-image-2</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.0345 <span class="muted small">/ image, 1K</span></td></tr>
+<tr><td><a href="models.html#nano-banana-pro"><code>nano-banana-pro</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.1035 <span class="muted small">/ image, 2K</span></td></tr>
+<tr><td><a href="models.html#nano-banana-2"><code>nano-banana-2</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.046 <span class="muted small">/ image, 1K</span></td></tr>
+<tr><td><a href="models.html#nano-banana-2.1"><code>nano-banana-2.1</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.023 <span class="muted small">/ image, 1K</span></td></tr>
+<tr><td><a href="models.html#seedream-5-pro"><code>seedream-5-pro</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.0805 <span class="muted small">/ image, 2K</span></td></tr>
+<tr><td><a href="models.html#seedream-5-flash"><code>seedream-5-flash</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.01863 <span class="muted small">/ image, 2K</span></td></tr>
+<tr><td><a href="models.html#seedream-5-lite"><code>seedream-5-lite</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.031625 <span class="muted small">/ image, 2K–4K</span></td></tr>
+<tr><td><a href="models.html#flux-2-pro"><code>flux-2-pro</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.02875 <span class="muted small">/ image, 1MP</span></td></tr>
+<tr><td><a href="models.html#flux-2-flex"><code>flux-2-flex</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.0805 <span class="muted small">/ image, 1K</span></td></tr>
+<tr><td><a href="models.html#imagen-4"><code>imagen-4</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.046 <span class="muted small">/ image, standard</span></td></tr>
+<tr><td><a href="models.html#ideogram-v3"><code>ideogram-v3</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.04025 <span class="muted small">/ image, balanced</span></td></tr>
+<tr><td><a href="models.html#qwen-image-3"><code>qwen-image-3</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.0276 <span class="muted small">/ image, 1K</span></td></tr>
+<tr><td><a href="models.html#qwen-image-3-pro"><code>qwen-image-3-pro</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.0368 <span class="muted small">/ image, 1K</span></td></tr>
+<tr><td><a href="models.html#grok-imagine-image"><code>grok-imagine-image</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.023 <span class="muted small">/ image</span></td></tr>
+<tr><td><a href="models.html#wan-2.7-image"><code>wan-2.7-image</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.0276 <span class="muted small">/ image, 2K</span></td></tr>
+<tr><td><a href="models.html#wan-2.7-image-pro"><code>wan-2.7-image-pro</code></a></td><td>image</td><td><code>/tasks</code></td><td class="r">$0.069 <span class="muted small">/ image, 2K</span></td></tr>
+<tr><td><a href="models.html#suno-v6"><code>suno-v6</code></a></td><td>audio</td><td><code>/tasks</code></td><td class="r">$0.069 <span class="muted small">/ song, up to 4 min</span></td></tr>
+<tr><td><a href="models.html#elevenlabs-v3"><code>elevenlabs-v3</code></a></td><td>audio</td><td><code>/tasks</code></td><td class="r">$0.0805 <span class="muted small">/ 1k characters</span></td></tr>
+<!-- prerender:models:end --></tbody></table></div>
 
     <h2 id="errors">Errors</h2>
     <div class="table-box"><table>
@@ -97,17 +143,17 @@
       </tbody></table></div>
 
     <h2 id="limits">Rate limits</h2>
-    <p>New accounts can run 10 media tasks at once per model. Limits rise automatically with usage; contact support if you need more for a launch.</p>
+    <p>New accounts can run 10 media tasks at once per model. For higher limits, request confirmation from support.</p>
 
     <h2 id="billing">Billing</h2>
-    <p>Usage is paid from prepaid credits. Each task's price depends on the options you pick, is fixed when it is created and shown in <code>cost_usd</code>. To see a price first, <code>POST /v1/quote</code> with the same <code>model</code> and <code>input</code> as a task (no key needed, nothing is charged). Tasks that fail, time out or are blocked by a safety filter are refunded automatically.</p>
+    <p>Usage is paid from prepaid credits. Each task's price depends on the options you pick, is fixed when it is created and shown in <code>cost_usd</code>. To see a price first, <code>POST /v1/quote</code> with the same <code>model</code> and <code>input</code> as a task (no key needed, nothing is charged). A task reserves credits on creation. When a task reaches a failed state, the Worker returns its reserved cost to the balance and records the task cost as zero. Confirm task status when checking a refund; a successful task remains charged.</p>
   </article>
 </main>
 <div id="site-footer"></div>
 <script src="assets/data.js"></script>
 <script src="assets/site.js"></script>
 <script>
-$("#model-rows").innerHTML = MODELS.map(m => `<tr><td><code>${m.id}</code></td><td>${m.cat}</td><td><code>/tasks</code></td><td class="r">${usd(m.ours)} <span class="muted small">/ ${esc(m.unit)}</span></td></tr>`).join("");
+$("#model-rows").innerHTML = MODELS.map(m => `<tr><td><a href="models.html#${esc(m.id)}"><code>${esc(m.id)}</code></a></td><td>${m.cat}</td><td><code>/tasks</code></td><td class="r">${usd(m.ours)} <span class="muted small">/ ${esc(m.unit)}</span></td></tr>`).join("");
 </script>
 </body>
 </html>

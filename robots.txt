@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://easytoken.si/sitemap.xml
