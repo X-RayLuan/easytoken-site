@@ -3,20 +3,20 @@
   const page = document.body.dataset.page || "";
   const acct = Account.get();
   const coin = `<svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14.5" fill="var(--brass)"/><circle cx="16" cy="16" r="10.5" fill="none" stroke="var(--paper)" stroke-width="1.6" stroke-dasharray="2.2 2.2"/><rect x="11" y="10" width="10" height="2.6" rx="1.3" fill="var(--paper)"/><rect x="14.7" y="10" width="2.6" height="12" rx="1.3" fill="var(--paper)"/></svg>`;
-  const links = [["models","models.html","Models"],["pricing","index.html#pricing","Pricing"],["playground","playground.html","Playground"],["docs","docs.html","Docs"]];
+  const links = [["models","/models","Models"],["pricing","/#pricing","Pricing"],["playground","/playground","Playground"],["docs","/docs","Docs"]];
   const h = document.getElementById("site-header");
   if (h) h.outerHTML = `<header class="nav"><div class="wrap">
-    <a class="brand" href="index.html">${coin}EasyToken <small>.si</small></a>
+    <a class="brand" href="/">${coin}EasyToken <small>.si</small></a>
     <nav aria-label="Main">${links.map(([k,u,l]) => `<a href="${u}"${k===page?' aria-current="page"':''}>${l}</a>`).join("")}</nav>
     ${acct
-      ? `<a class="btn btn-primary" href="dashboard.html">Dashboard</a>`
-      : `<a class="nav-login" href="login.html">Log in</a><a class="btn btn-primary" href="signup.html">Get API key</a>`}
+      ? `<a class="btn btn-primary" href="/dashboard">Dashboard</a>`
+      : `<a class="nav-login" href="/login">Log in</a><a class="btn btn-primary" href="/signup">Get API key</a>`}
   </div></header>`;
   const f = document.getElementById("site-footer");
   if (f) f.outerHTML = `<footer><div class="wrap">
-    <a class="brand" href="index.html">${coin.replace(/26/g,"22")}EasyToken</a>
-    <nav aria-label="Footer"><a href="models.html">Models</a><a href="index.html#pricing">Pricing</a><a href="docs.html">Docs</a><a href="status.html">Status</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a></nav>
-    <span>© 2026 EasyToken · easytoken.si</span>
+    <a class="brand" href="/">${coin.replace(/26/g,"22")}EasyToken</a>
+    <nav aria-label="Footer"><a href="/models">Models</a><a href="/#pricing">Pricing</a><a href="/docs">Docs</a><a href="/status">Status</a><a href="/terms">Terms</a><a href="/privacy">Privacy</a></nav>
+    <span>© 2026 EasyToken · AI AGENT AUTOMATION LLC · 30 N Gould St Ste R, Sheridan, WY 82801, USA · <a href="mailto:hello@easytoken.si">hello@easytoken.si</a></span>
   </div></footer>`;
 
   // Copy buttons: <button data-copy="#selector">
