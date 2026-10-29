@@ -67,8 +67,8 @@ test("price follows resolution, duration, mode and audio", () => {
   near(usd("kling-3.0", { prompt: "x", mode: "std", sound: true, duration: 10 }), 1.15);
   near(usd("kling-3.0", { prompt: "x", mode: "4K", duration: "15" }), 0.38525 * 15);
   assert.equal(quote(mediaModel("kling-3.0"), { prompt: "x", duration: 15 }).up("").input.duration, "15");
-  // wan 2.6: image-to-video 1080p 10s is priced differently from text-to-video
-  near(usd("wan-2.6", { prompt: "x", resolution: "1080p", duration: 10 }), 1.204625);
+  // wan 2.6: Kie lists the same 1080p 10s price for text and image inputs
+  near(usd("wan-2.6", { prompt: "x", resolution: "1080p", duration: 10 }), 1.2075);
   near(usd("wan-2.6", { prompt: "x", resolution: "1080p", duration: 10, image_urls: ["https://a.test/i.png"] }), 1.2075);
   // extra charges for input images
   near(usd("minimax-h3", { prompt: "x", duration: 6, image_urls: ["https://a.test/1.png", "https://a.test/2.png"] }), 0.046 * 6 + 0.023 * 2);
@@ -102,15 +102,15 @@ test("audio models are priced at kie × 1.15 like everything else", () => {
 const IMG = n => Array.from({ length: n }, (_, k) => `https://a.test/${k}.png`);
 
 test("wan 2.6 image-to-video is billed at kie's image-to-video price for every resolution × duration", () => {
-  const i2v = { "720p-5": 0.35, "720p-10": 0.70, "720p-15": 1.05, "1080p-5": 0.5225, "1080p-10": 1.05, "1080p-15": 1.575 };
+  const i2v = { "720p-5": 0.35, "720p-10": 0.70, "720p-15": 1.05, "1080p-5": 0.525, "1080p-10": 1.05, "1080p-15": 1.575 };
   for (const [k, kie] of Object.entries(i2v)) {
     const [resolution, duration] = k.split("-"), q = quote(mediaModel("wan-2.6"), { prompt: "xx", resolution, duration, image_urls: IMG(1) });
     assert.deepEqual(q.charges, [[`i2v-${resolution}-${duration}s`, 1]], k);
     assert.equal(q.micros, saleMicros(kie), k);
     assert.equal(q.up("").model, "wan/2-6-image-to-video", k);
   }
-  // 1080p 10s: image-to-video ($1.05) is not the text-to-video price ($1.0475)
-  assert.notEqual(usd("wan-2.6", { prompt: "xx", resolution: "1080p", duration: 10, image_urls: IMG(1) }), usd("wan-2.6", { prompt: "xx", resolution: "1080p", duration: 10 }));
+  // 1080p 10s: both modes now list the same Kie price ($1.05).
+  assert.equal(usd("wan-2.6", { prompt: "xx", resolution: "1080p", duration: 10, image_urls: IMG(1) }), usd("wan-2.6", { prompt: "xx", resolution: "1080p", duration: 10 }));
   assert.equal(quote(mediaModel("wan-2.6"), { prompt: "xx" }).up("").model, "wan/2-6-text-to-video");
 });
 

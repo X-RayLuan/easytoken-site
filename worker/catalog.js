@@ -1,7 +1,7 @@
 // Billing source of truth: what each public model costs and how it maps to the upstream request.
 // Every price is kie.ai's list price × MARKUP, per model and per option (resolution, duration, mode, audio…).
 // `kie` holds kie's USD price per unit, snapshot from kie.ai/pricing (public API: POST
-// https://api.kie.ai/client/v1/model-pricing/page) on 2026-10-10 and saved in scripts/kie-snapshot.json.
+// https://api.kie.ai/client/v1/model-pricing/page) on 2026-10-29 and saved in scripts/kie-snapshot.json.
 // Re-check with `node scripts/kie-prices.mjs`.
 // `build` validates the caller's input and returns the upstream request plus the billable `charges`
 // ([tier, quantity] pairs), so the price is known exactly before the task is submitted.
@@ -113,9 +113,9 @@ const MEDIA = [
       return im ? job("wan/2-7-image-to-video", { ...common, first_frame_url: im[0], last_frame_url: im[1] }, [res, d])
         : job("wan/2-7-text-to-video", { ...common, ratio: ar(i.aspect_ratio, ["16:9", "9:16", "1:1", "4:3", "3:4"], "16:9") }, [res, d]); } },
   { id: "wan-2.6", cat: "video", per: "video",
-    // Image-to-video has its own kie price per resolution × duration; it is never billed at the text-to-video price.
-    kie: { "720p-5s": 0.35, "720p-10s": 0.70, "720p-15s": 1.05, "1080p-5s": 0.5225, "1080p-10s": 1.0475, "1080p-15s": 1.575,
-      "i2v-720p-5s": 0.35, "i2v-720p-10s": 0.70, "i2v-720p-15s": 1.05, "i2v-1080p-5s": 0.5225, "i2v-1080p-10s": 1.05, "i2v-1080p-15s": 1.575 },
+    // Image-to-video has its own Kie record per resolution × duration (some currently match text-to-video).
+    kie: { "720p-5s": 0.35, "720p-10s": 0.70, "720p-15s": 1.05, "1080p-5s": 0.525, "1080p-10s": 1.05, "1080p-15s": 1.575,
+      "i2v-720p-5s": 0.35, "i2v-720p-10s": 0.70, "i2v-720p-15s": 1.05, "i2v-1080p-5s": 0.525, "i2v-1080p-10s": 1.05, "i2v-1080p-15s": 1.575 },
     build: i => { const im = imgs(i, 1), res = oneOf(i.resolution, "resolution", ["720p", "1080p"], "1080p"), d = oneOf(i.duration == null ? null : String(i.duration), "duration", ["5", "10", "15"], "5");
       if (i.aspect_ratio != null) fail(422, "invalid_input", "input.aspect_ratio is not supported by Wan 2.6.");
       const tier = `${im ? "i2v-" : ""}${res}-${d}s`;

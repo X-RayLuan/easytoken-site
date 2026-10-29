@@ -1,6 +1,6 @@
 {
  "source": "https://kie.ai/pricing",
- "date": "2026-10-10",
+ "date": "2026-10-29",
  "records": {
   "Black Forest Labs Flux 2 Flex, text to image, 1.0s-1K": {
    "kie": 0.07,
@@ -18,7 +18,7 @@
    "kie": 0.035,
    "official": 0.045
   },
-  "Elevenlabs V3 , Text to dialogue": {
+  "Elevenlabs V3, Text to dialogue": {
    "kie": 0.07,
    "official": 0.1
   },
@@ -112,15 +112,15 @@
   },
   "MiniMax H3, image input, 768p, 2k": {
    "kie": 0.02,
-   "official": null
+   "official": 0.04
   },
   "MiniMax H3, text to video, 2K": {
    "kie": 0.065,
-   "official": null
+   "official": 0.13
   },
   "MiniMax H3, text to video, 768p": {
    "kie": 0.04,
-   "official": null
+   "official": 0.08
   },
   "Qwen image 3.0 Pro, input, 1K": {
    "kie": 0.0025,
@@ -212,15 +212,15 @@
   },
   "gpt-image-2-5-flare, text-to-image, 1K": {
    "kie": 0.03,
-   "official": null
+   "official": 0.0527
   },
   "gpt-image-2-5-flare, text-to-image, 2K": {
    "kie": 0.05,
-   "official": null
+   "official": 0.107
   },
   "gpt-image-2-5-flare, text-to-image, 4K": {
    "kie": 0.08,
-   "official": null
+   "official": 0.1779
   },
   "grok-imagine, image-to-video, 1080p": {
    "kie": 0.04,
@@ -252,7 +252,7 @@
   },
   "hailuo 2.3, image-to-video, Pro-10.0s-768p": {
    "kie": 0.45,
-   "official": null
+   "official": 0.56
   },
   "hailuo 2.3, image-to-video, Pro-6.0s-1080p": {
    "kie": 0.4,
@@ -260,7 +260,7 @@
   },
   "hailuo 2.3, image-to-video, Pro-6.0s-768p": {
    "kie": 0.225,
-   "official": null
+   "official": 0.28
   },
   "hailuo 2.3, image-to-video, Standard-10.0s-768p": {
    "kie": 0.25,
@@ -268,21 +268,21 @@
   },
   "hailuo 2.3, image-to-video, Standard-6.0s-1080p": {
    "kie": 0.25,
-   "official": null
+   "official": 0.49
   },
   "hailuo 2.3, image-to-video, Standard-6.0s-768p": {
    "kie": 0.15,
    "official": 0.28
   },
-  "ideogram v3,  text-to-image, BALANCED": {
+  "ideogram v3, text-to-image, BALANCED": {
    "kie": 0.035,
    "official": 0.06
   },
-  "ideogram v3,  text-to-image, QUALITY": {
+  "ideogram v3, text-to-image, QUALITY": {
    "kie": 0.05,
    "official": 0.09
   },
-  "ideogram v3,  text-to-image, TURBO": {
+  "ideogram v3, text-to-image, TURBO": {
    "kie": 0.0175,
    "official": 0.03
   },
@@ -312,53 +312,53 @@
   },
   "nano-banana-2-1, 1K": {
    "kie": 0.02,
-   "official": 0.08
+   "official": 0.0336
   },
   "nano-banana-2-1, 2K": {
    "kie": 0.03,
-   "official": 0.12
+   "official": 0.0504
   },
   "nano-banana-2-1, 4K": {
    "kie": 0.045,
-   "official": 0.16
+   "official": 0.113
   },
-  "pixverse-v6, Text /Image to Video, 1080p (no audio)": {
+  "pixverse-v6, Text /Image to Video, 1080p(no audio)": {
    "kie": 0.072,
    "official": 0.09
   },
-  "pixverse-v6, Text /Image to Video, 1080p (with audio)": {
+  "pixverse-v6, Text /Image to Video, 1080p(with audio)": {
    "kie": 0.092,
    "official": 0.115
   },
-  "pixverse-v6, Text /Image to Video, 360p (with audio)": {
-   "kie": 0.028,
-   "official": 0.035
-  },
-  "pixverse-v6, Text /Image to Video, 360p（no audio）": {
+  "pixverse-v6, Text /Image to Video, 360p(no audio)": {
    "kie": 0.02,
    "official": 0.025
   },
-  "pixverse-v6, Text /Image to Video, 540p (no audio)": {
+  "pixverse-v6, Text /Image to Video, 360p(with audio)": {
    "kie": 0.028,
    "official": 0.035
   },
-  "pixverse-v6, Text /Image to Video, 540p (with audio)": {
+  "pixverse-v6, Text /Image to Video, 540p(no audio)": {
+   "kie": 0.028,
+   "official": 0.035
+  },
+  "pixverse-v6, Text /Image to Video, 540p(with audio)": {
    "kie": 0.036,
    "official": 0.045
   },
-  "pixverse-v6, Text /Image to Video, 720p (no audio)": {
+  "pixverse-v6, Text /Image to Video, 720p(no audio)": {
    "kie": 0.036,
    "official": 0.045
   },
-  "pixverse-v6, Text /Image to Video, 720p (with audio)": {
+  "pixverse-v6, Text /Image to Video, 720p(with audio)": {
    "kie": 0.048,
    "official": 0.06
   },
-  "seedream 5 Flash, Text to image , 1K": {
+  "seedream 5 Flash, Text to image, 1.5K": {
    "kie": 0.0162,
    "official": 0.018
   },
-  "seedream 5 Flash, Text to image, 1.5K": {
+  "seedream 5 Flash, Text to image, 1K": {
    "kie": 0.0162,
    "official": 0.018
   },
@@ -388,7 +388,7 @@
   },
   "wan 2.6, image-to-video, 10.0s-720p": {
    "kie": 0.7,
-   "official": 1
+   "official": 1.0
   },
   "wan 2.6, image-to-video, 15.0s-1080p": {
    "kie": 1.575,
@@ -399,7 +399,7 @@
    "official": 1.5
   },
   "wan 2.6, image-to-video, 5.0s-1080p": {
-   "kie": 0.5225,
+   "kie": 0.525,
    "official": 0.75
   },
   "wan 2.6, image-to-video, 5.0s-720p": {
@@ -407,12 +407,12 @@
    "official": 0.5
   },
   "wan 2.6, text to video, 10.0s-1080p": {
-   "kie": 1.0475,
+   "kie": 1.05,
    "official": 1.5
   },
   "wan 2.6, text to video, 10.0s-720p": {
    "kie": 0.7,
-   "official": 1
+   "official": 1.0
   },
   "wan 2.6, text to video, 15.0s-1080p": {
    "kie": 1.575,
@@ -423,7 +423,7 @@
    "official": 1.5
   },
   "wan 2.6, text to video, 5.0s-1080p": {
-   "kie": 0.5225,
+   "kie": 0.525,
    "official": 0.75
   },
   "wan 2.6, text to video, 5.0s-720p": {

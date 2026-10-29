@@ -11,8 +11,8 @@ test('sitemap entries are indexable canonical static assets', () => {
   const sitemap = read('sitemap.xml');
   assert.match(sitemap, /^<\?xml version="1.0" encoding="UTF-8"\?>/);
   const urls = [...sitemap.matchAll(/<loc>https:\/\/easytoken\.si\/(.*?)<\/loc>/g)].map(m => m[1]);
-  assert.deepEqual(urls, ['', 'models', 'docs', 'privacy', 'terms']);
-  for (const url of urls) {
+  assert.deepEqual(urls, ['', 'models', 'llms.txt', 'llms-full.txt', 'docs', 'privacy', 'terms']);
+  for (const url of urls.filter(u => !u.endsWith(".txt"))) {
     const html = read(url ? `${url}.html` : 'index.html');
     assert.ok(html.includes(`<link rel="canonical" href="https://easytoken.si/${url}">`));
     assert.doesNotMatch(html, /<meta name="robots" content="noindex/);
@@ -50,10 +50,10 @@ test('HTML pricing and docs model IDs match the source catalog without JS', () =
     const price = '$' + (Number.isInteger(m.ours * 100) ? m.ours.toFixed(2) : String(+m.ours.toFixed(6)));
     assert.ok(card.includes(`<b>${price}</b>`), `${m.id} price`);
     assert.ok(card.includes(m.official == null ? 'Official / Fal price: –' : 'Official / Fal price: $'), `${m.id} comparison`);
-    assert.ok(card.includes('All prices · 2026-10-10 snapshot'), `${m.id} provenance`);
+    assert.ok(card.includes('All prices · 2026-10-29 snapshot'), `${m.id} provenance`);
   }
-  assert.match(catalog, /2026-10-10 snapshot/);
-  assert.match(home, /snapshot 2026-10-10/);
+  assert.match(catalog, /2026-10-29 snapshot/);
+  assert.match(home, /snapshot 2026-10-29/);
   assert.equal((docs.match(/<h1>/g) || []).length, 1);
 });
 
@@ -96,4 +96,41 @@ test('asset exclusions prevent publishing repository internals', () => {
   for (const path of ['docs', 'docs/', 'README.md', '*.md', 'worker', 'scripts', 'tests', '.github'])
     assert.ok(ignored.includes(path), `${path} must be excluded from static assets`);
   assert.ok(read('docs/claim-ledger.md').length > 0, 'claim ledger stays in the repository');
+});
+
+// Static assets are not served by the Worker on api.easytoken.si; check routing and headers.
+test('LLM discovery files are readable and the API root is not indexable or marketing HTML', async () => {
+  const { default: worker } = await import('../worker/index.js');
+  const requests = [];
+  const env = { ASSETS: { fetch: async req => {
+    requests.push(new URL(req.url).pathname);
+    const file = new URL(req.url).pathname.slice(1);
+    return new Response(read(file), { status: 200, headers: { 'content-type': 'text/plain' } });
+  } } };
+  for (const path of ['/llms.txt', '/llms-full.txt']) {
+    const res = await worker.fetch(new Request(`https://easytoken.si${path}`), env, {});
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type'), /^text\/plain/);
+    assert.match(await res.text(), /https:\/\/easytoken.si\/docs/);
+    assert.ok(read('robots.txt').split('\n').includes(`Allow: ${path}`));
+    assert.ok(read('sitemap.xml').includes(`https://easytoken.si${path}`));
+  }
+  const root = await worker.fetch(new Request('https://api.easytoken.si/'), env, {});
+  assert.equal(root.status, 200);
+  assert.equal(root.headers.get('x-robots-tag'), 'noindex');
+  assert.equal(root.headers.get('content-type'), 'application/json; charset=utf-8');
+  assert.equal((await root.json()).docs, 'https://easytoken.si/docs');
+  for (const path of ['/models', '/index.html', '/llms.txt']) {
+    const res = await worker.fetch(new Request(`https://api.easytoken.si${path}`), env, {});
+    assert.equal(res.status, 404);
+    assert.equal(res.headers.get('x-robots-tag'), 'noindex');
+  }
+  const models = await worker.fetch(new Request('https://api.easytoken.si/v1/models'), env, {});
+  assert.equal(models.status, 200);
+  assert.ok((await models.json()).data.length);
+  const quote = await worker.fetch(new Request('https://api.easytoken.si/v1/quote', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({model:'veo-3.1',input:{prompt:'A sunny park'}})}), env, {});
+  assert.equal(quote.status, 200);
+  assert.equal((await quote.json()).object, 'quote');
+  assert.deepEqual(requests, ['/llms.txt', '/llms-full.txt']);
+  assert.match(read('wrangler.jsonc'), /"\/\*"/); // Worker must run before all static asset requests.
 });

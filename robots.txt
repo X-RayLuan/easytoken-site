@@ -1,6 +1,8 @@
 # Public pricing and docs are available to search, AI retrieval and AI training crawlers.
 User-agent: *
 Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
 Disallow: /api/
 Disallow: /v1/
 
@@ -17,6 +19,8 @@ User-agent: ClaudeBot
 User-agent: Google-Extended
 User-agent: CCBot
 Allow: /
+Allow: /llms.txt
+Allow: /llms-full.txt
 Disallow: /api/
 Disallow: /v1/
 

@@ -1,0 +1,20 @@
+# EasyToken
+
+> EasyToken provides pay-as-you-go video, image and audio generation through a unified API. No chat/text models. Prices are a dated snapshot; request a quote for your exact configuration.
+
+## Overview
+- [EasyToken](https://easytoken.si/): Product overview, example prices and account entry points.
+
+## Pricing
+- [Pricing snapshot](https://easytoken.si/#pricing): Example prices, comparison methodology and snapshot date.
+- [Full option prices](https://easytoken.si/models): Per-option prices and units for supported models.
+- [Quote endpoint](https://easytoken.si/docs#billing): How to obtain a configuration-specific quote before creating a task.
+
+## Models
+- [Video, image and audio models](https://easytoken.si/models): Supported model IDs, example inputs and option prices.
+- [Model API](https://easytoken.si/docs#models): JSON catalog and API usage details.
+
+## Docs/API
+- [API documentation](https://easytoken.si/docs): Authentication, task creation, billing, webhooks and endpoints.
+- [API root](https://api.easytoken.si/): Machine-readable API identity and docs link; not intended for indexing.
+- [Expanded LLM guide](https://easytoken.si/llms-full.txt): Additional context on pricing and API usage.

@@ -91,7 +91,7 @@
     <p>When you pass <code>callback_url</code>, we send the same body as <a href="#get-task">Get a task</a> once the task finishes. Each request carries an <code>X-EasyToken-Signature</code> header: an HMAC-SHA256 of the raw body with your webhook secret. Reply with any 2xx within 10 seconds; we retry up to 5 times with backoff.</p>
 
     <h2 id="models">Model IDs</h2>
-    <p><code>GET /v1/models</code> returns this list as JSON with the price of every option (resolution, duration, mode, audio); <code>GET /v1/balance</code> returns your credit balance. The example prices below use the catalog inputs (snapshot 2026-10-10); quote your chosen options for a current price.</p>
+    <p><code>GET /v1/models</code> returns this list as JSON with the price of every option (resolution, duration, mode, audio); <code>GET /v1/balance</code> returns your credit balance. The example prices below use the catalog inputs (snapshot 2026-10-29); quote your chosen options for a current price.</p>
     <div class="table-box"><table><thead><tr><th>Model ID</th><th>Type</th><th>Endpoint</th><th class="r">Price</th></tr></thead><tbody id="model-rows"><!-- prerender:models:start -->
 <tr><td><a href="/models#veo-3.1"><code>veo-3.1</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$1.46625 <span class="muted small">/ 8s clip, 1080p, quality</span></td></tr>
 <tr><td><a href="/models#seedance-2.5"><code>seedance-2.5</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$1.81125 <span class="muted small">/ 5s clip, 720p</span></td></tr>
@@ -103,7 +103,7 @@
 <tr><td><a href="/models#wan-3.0"><code>wan-3.0</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.92 <span class="muted small">/ 5s clip, 1080p</span></td></tr>
 <tr><td><a href="/models#wan-3.0-prime"><code>wan-3.0-prime</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$1.449 <span class="muted small">/ 5s clip, 1080p</span></td></tr>
 <tr><td><a href="/models#wan-2.7"><code>wan-2.7</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.69 <span class="muted small">/ 5s clip, 1080p</span></td></tr>
-<tr><td><a href="/models#wan-2.6"><code>wan-2.6</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.600875 <span class="muted small">/ 5s clip, 1080p</span></td></tr>
+<tr><td><a href="/models#wan-2.6"><code>wan-2.6</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.60375 <span class="muted small">/ 5s clip, 1080p</span></td></tr>
 <tr><td><a href="/models#hailuo-2.3"><code>hailuo-2.3</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.1725 <span class="muted small">/ 6s clip, 768p, standard</span></td></tr>
 <tr><td><a href="/models#minimax-h3"><code>minimax-h3</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.276 <span class="muted small">/ 6s clip, 768p</span></td></tr>
 <tr><td><a href="/models#grok-imagine-video"><code>grok-imagine-video</code></a></td><td>video</td><td><code>/tasks</code></td><td class="r">$0.15525 <span class="muted small">/ 6s clip, 720p</span></td></tr>
