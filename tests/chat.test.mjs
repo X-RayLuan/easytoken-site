@@ -42,7 +42,7 @@ test("/v1/chat/completions returns 404 model_not_found for any model, with or wi
     for (const model of [...REMOVED, "anything"]) for (const auth of [`Bearer ${KEY}`, null]) for (const stream of [false, true]) {
       const res = await worker.fetch(new Request("https://api.easytoken.si/v1/chat/completions", { method: "POST", headers: auth ? { authorization: auth } : {}, body: JSON.stringify({ model, stream, messages: [{ role: "user", content: "hi" }] }) }), env, { waitUntil() {} });
       assert.equal(res.status, 404, model);
-      assert.equal((await res.json()).error.code, "model_not_found");
+      assert.equal((await res.json()).error.code, "invalid_model");
     }
   } finally { globalThis.fetch = realFetch; }
   assert.deepEqual(calls, []);

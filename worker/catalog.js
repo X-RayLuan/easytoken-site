@@ -9,6 +9,7 @@
 import { fail } from "./util.js";
 
 export const MARKUP = 1.15;
+export const MAX_RUNNING_PER_MODEL = 10;
 // Sale price in micro-dollars for one unit of a kie tier, rounded up so we never sell below cost × MARKUP.
 export const saleMicros = kieUsd => Math.ceil(Math.round(kieUsd * 1e6) * Math.round(MARKUP * 100) / 100);
 
@@ -306,5 +307,7 @@ export const mediaModel = id => MEDIA.find(m => m.id === id) || null;
 export const mediaModels = () => MEDIA;
 export const allModels = () => [
   ...MEDIA.map(m => ({ id: m.id, object: "model", type: m.cat, endpoint: "/v1/tasks",
-    pricing: Object.entries(m.tiers).map(([option, t]) => ({ option, usd: t.micros / 1e6, per: t.per })) })),
+    pricing: Object.entries(m.tiers).map(([option, t]) => ({ option, usd: t.micros / 1e6, per: t.per })),
+    capabilities: { modalities: [m.cat], operation: "async_task", input_schema: { note: "See /v1/quote for exact supported combinations and input validation." } },
+    context_length: null, rate_limits: { max_concurrent_per_user_model: MAX_RUNNING_PER_MODEL, requests_per_minute: null } })),
 ];

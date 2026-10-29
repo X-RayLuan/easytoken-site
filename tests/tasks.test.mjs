@@ -10,6 +10,7 @@ import worker from "../worker/index.js";
 function d1() {
   const db = new DatabaseSync(":memory:");
   db.exec(readFileSync(new URL("../migrations/0001_init.sql", import.meta.url), "utf8"));
+  db.exec(readFileSync(new URL("../migrations/0002_agent_budget_idempotency.sql", import.meta.url), "utf8"));
   const stmt = (sql, args = []) => ({
     bind: (...a) => stmt(sql, a),
     first: async () => db.prepare(sql).get(...args) ?? null,
@@ -84,7 +85,7 @@ test("wan 2.6 image-to-video charges the image-to-video price", async () => {
 
 test("insufficient balance is refused with the exact price", async () => {
   await env.DB.prepare("UPDATE users SET balance = 1000 WHERE id = 'u1'").run();
-  await assert.rejects(run("veo-3.1", { prompt: "x", mode: "fast", resolution: "4k" }), e => e.status === 402 && /costs \$1\.035 /.test(e.message));
+  await assert.rejects(run("veo-3.1", { prompt: "x", mode: "fast", resolution: "4k" }), e => e.status === 402 && e.code === "insufficient_balance");
   assert.equal(calls.length, 0);
 });
 
@@ -123,4 +124,86 @@ test("GET /v1/models lists every option with its sale price", async () => {
   const veo = (await res.json()).data.find(m => m.id === "veo-3.1");
   assert.deepEqual(veo.pricing.find(p => p.option === "quality-4k"), { option: "quality-4k", usd: 2.1275, per: "video (8s)" });
   assert.ok(!JSON.stringify(veo).includes("kie"), "kie cost is not exposed");
+});
+
+// Budget and reservation tests exercise SQLite triggers against the same migration shipped to D1.
+const key = async (id, cap = 10000000, spend = null, max = null) => {
+  await env.DB.prepare("INSERT INTO api_keys (id,user_id,name,key_hash,prefix,last4,daily_cap,spend_cap,max_cost) VALUES (?, 'u1', 'agent', ?, 'et_live_', 'abcd', ?, ?, ?)")
+    .bind(id, id + '-hash', cap, spend, max).run();
+};
+const keyed = async (id, prompt = 'x', token = null) => createTask(env, ctx, {
+  user: await user(), keyId: id, body: { model: 'veo-3.1', input: { prompt, mode: 'fast', resolution: '720p' } },
+  origin: 'https://easytoken.si', idempotencyKey: token,
+});
+test('simultaneous budget reservations cannot exceed the cap and denied request never reaches Kie', async () => {
+  await key('k1', 345000);
+  const settled = await Promise.allSettled([keyed('k1'), keyed('k1', 'y')]);
+  assert.equal(settled.filter(r => r.status === 'fulfilled').length, 1);
+  assert.equal(settled.find(r => r.status === 'rejected').reason.code, 'budget_exceeded');
+  assert.equal(calls.length, 1);
+  assert.equal((await user()).balance, 9655000);
+});
+test('keys share account balance and revocation is enforced during reservation', async () => {
+  await key('k1'); await key('k2');
+  await env.DB.prepare("UPDATE users SET balance = 345000 WHERE id = 'u1'").run();
+  const outcomes = await Promise.allSettled([keyed('k1'), keyed('k2')]);
+  assert.equal(outcomes.filter(r => r.status === 'fulfilled').length, 1);
+  assert.equal(outcomes.find(r => r.status === 'rejected').reason.code, 'insufficient_balance');
+  assert.equal(calls.length, 1);
+  await env.DB.prepare("UPDATE api_keys SET revoked_at = '2026-01-01' WHERE id = 'k1'").run();
+  await assert.rejects(keyed('k1'), e => e.code === 'invalid_api_key');
+});
+test('refund releases lifetime and daily budget exactly once', async () => {
+  await key('k1', 345000, 345000, 345000);
+  const t = await keyed('k1');
+  const { finishTask } = await import('../worker/tasks.js');
+  await Promise.all([finishTask(env, ctx, t.id, { status: 'failed', error: 'failed' }), finishTask(env, ctx, t.id, { status: 'failed', error: 'again' })]);
+  assert.equal((await user()).balance, 10000000);
+  assert.equal((await env.DB.prepare("SELECT COUNT(*) AS n FROM ledger WHERE kind = 'refund'").first()).n, 1);
+  await keyed('k1', 'second');
+  assert.equal(calls.length, 2);
+});
+test('idempotency is isolated per key, conflict rejects changed body, timeout never resubmits', async () => {
+  await key('k1'); await key('k2');
+  const first = await keyed('k1', 'x', 'same');
+  const replay = await keyed('k1', 'x', 'same');
+  assert.equal(replay.id, first.id);
+  assert.equal(replay.replayed, true);
+  await assert.rejects(keyed('k1', 'different', 'same'), e => e.code === 'idempotency_conflict');
+  const other = await keyed('k2', 'x', 'same');
+  assert.notEqual(other.id, first.id);
+  assert.equal(calls.length, 2);
+  globalThis.fetch = async () => { calls.push({ timeout: true }); throw new Error('timeout'); };
+  const uncertain = await keyed('k1', 'timeout', 'new');
+  assert.equal(uncertain.status, 'queued');
+  assert.equal(uncertain.submitTimeout, true);
+  const again = await keyed('k1', 'timeout', 'new');
+  assert.equal(again.id, uncertain.id);
+  assert.equal(calls.length, 3);
+});
+test('constraint abort rolls back task and debit if ledger ref conflicts', async () => {
+  await env.DB.prepare("INSERT INTO ledger(user_id,amount,kind,ref) VALUES ('u1',0,'adjust','task:fixed')").run();
+  await assert.rejects(env.DB.prepare("INSERT INTO tasks(id,user_id,model,kind,status,cost) VALUES ('fixed','u1','veo-3.1','media','queued',345000)").run());
+  assert.equal((await user()).balance, 10000000);
+  assert.equal((await env.DB.prepare("SELECT COUNT(*) AS n FROM tasks").first()).n, 0);
+});
+test('headers, fresh balance, CORS, replay and error envelopes on both hosts', async () => {
+  const { sha256 } = await import('../worker/util.js');
+  const secret = 'et_live_' + 'x'.repeat(32);
+  await env.DB.prepare("INSERT INTO api_keys(id,user_id,name,key_hash,prefix,last4,daily_cap) VALUES ('k1','u1','agent',?,'et_live_','xxxx',10000000)").bind(await sha256(secret)).run();
+  const req = (host, extra = {}) => new Request(`https://${host}/v1/tasks`, { method: 'POST', headers: { authorization: `Bearer ${secret}`, 'idempotency-key': 'a', ...extra }, body: JSON.stringify({ model: 'veo-3.1', input: { prompt: 'x', mode: 'fast', resolution: '720p' } }) });
+  const created = await worker.fetch(req('api.easytoken.si'), env, ctx);
+  assert.equal(created.status, 202);
+  assert.equal(created.headers.get('x-easytoken-cost'), '0.345000');
+  assert.equal(created.headers.get('x-easytoken-balance'), '9.655000');
+  assert.match(created.headers.get('access-control-expose-headers'), /X-EasyToken-Balance/);
+  const replay = await worker.fetch(req('easytoken.si'), env, ctx);
+  assert.equal(replay.status, 200);
+  assert.equal(replay.headers.get('idempotency-replayed'), 'true');
+  assert.equal(replay.headers.get('x-easytoken-cost'), '0.000000');
+  const invalid = await worker.fetch(new Request('https://api.easytoken.si/v1/tasks', { headers: { authorization: 'Bearer wrong' } }), env, ctx);
+  assert.equal(invalid.headers.get('x-easytoken-balance'), 'unknown');
+  assert.equal((await invalid.json()).error.param, null);
+  const options = await worker.fetch(new Request('https://api.easytoken.si/v1/tasks', { method: 'OPTIONS' }), env, ctx);
+  assert.equal(options.headers.get('x-easytoken-cost'), '0.000000');
 });
