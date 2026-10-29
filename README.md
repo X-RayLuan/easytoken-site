@@ -4,7 +4,8 @@ One Cloudflare Worker serves the static site and the API.
 
 - `/v1/*` — public API, `Authorization: Bearer et_live_…` (also on `api.easytoken.si`)
 - `/api/*` — dashboard API, HttpOnly session cookie
-- everything else — static files in this folder
+- marketing host: static files in this folder, including `/llms.txt` and `/llms-full.txt`
+- `api.easytoken.si/`: JSON API introduction with `X-Robots-Tag: noindex`; non-API static paths return 404 (the Worker runs before assets on every route)
 
 Code: `worker/` (index = router, auth, tasks = media tasks + refunds + webhooks, billing = Stripe, kie = upstream client, catalog = prices + upstream mapping). Schema: `migrations/`. All prices (media and audio) are kie.ai's list price × 1.15 (`MARKUP` in `worker/catalog.js`), per model and per option (resolution, duration, mode, audio, input images). Each model's `kie` table is a snapshot of kie.ai/pricing, saved with kie's "Official / Fal Price" in `scripts/kie-snapshot.json`; the site's `official` prices come from that column (null where kie shows N/A). `node scripts/kie-prices.mjs` compares catalog and snapshot with kie's live price list (free, no key), `--snapshot` rewrites the snapshot and `--markdown` prints the price table. `POST /v1/quote` returns a task's price without running it. The example prices on the site live in `assets/data.js` and must match `worker/catalog.js`; `node --test tests/*.test.mjs` checks this (and runs the task/billing flow against an in-memory D1 with kie mocked) in CI. Node 24+ (uses `node:sqlite`).
 

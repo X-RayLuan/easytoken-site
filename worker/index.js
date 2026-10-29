@@ -101,7 +101,7 @@ async function api(request, env, ctx, path) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const apiHost = url.hostname.startsWith("api.");
+    const apiHost = url.hostname === "api.easytoken.si";
     let path = url.pathname.replace(/\/+$/, "") || "/";
     try {
       if (path.startsWith("/v1/") || path === "/v1") {
@@ -109,7 +109,21 @@ export default {
         return withCors(await v1(request, env, ctx, path));
       }
       if (path.startsWith("/api/")) return await api(request, env, ctx, path);
-      if (apiHost) return json({ name: "EasyToken API", docs: "https://easytoken.si/docs", base_url: `${url.origin}/v1` });
+      // All requests reach the Worker first, including static asset paths on the API host.
+      // No marketing HTML (or other static assets) should be exposed on this hostname.
+      if (apiHost) {
+        const response = path === "/" && request.method === "GET"
+          ? json({ name: "EasyToken API", docs: "https://easytoken.si/docs", base_url: `${url.origin}/v1` })
+          : json({ error: "not_found" }, 404);
+        response.headers.set("X-Robots-Tag", "noindex");
+        return response;
+      }
+      if ((path === "/llms.txt" || path === "/llms-full.txt") && request.method === "GET") {
+        const asset = await env.ASSETS.fetch(request);
+        const response = new Response(asset.body, asset);
+        response.headers.set("Content-Type", "text/plain; charset=utf-8");
+        return response;
+      }
     } catch (e) {
       const res = errorResponse(e);
       return path.startsWith("/v1") ? withCors(res) : res;

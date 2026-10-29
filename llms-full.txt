@@ -1,0 +1,15 @@
+# EasyToken: complete guide for retrieval
+
+> Source: https://easytoken.si/ · Pricing snapshot: 2026-10-29. These are example prices, not a guarantee of the current cost for a different configuration.
+
+## Overview
+EasyToken offers video, image and audio generation through one API. It does not offer chat/text models. Browse the site at https://easytoken.si/ for a product overview and examples.
+
+## Pricing
+Prices vary by model and option (for example, duration, resolution, audio and input images). EasyToken's catalog calculates each option as Kie's listed USD price multiplied by 1.15, rounded up to micro-dollars. The site compares some examples with Kie's “Official / Fal Price” column; that column is not necessarily a vendor-direct price. See https://easytoken.si/models for the option prices and units and https://easytoken.si/#pricing for the homepage examples. For the exact cost of a configuration before creating a task, call POST /v1/quote as described at https://easytoken.si/docs#billing. Quotes do not run a task.
+
+## Models
+See https://easytoken.si/models for supported video, image and audio models, example input configurations and their prices. GET /v1/models provides the machine-readable catalog; see https://easytoken.si/docs#models for details. Model availability and prices may change; consult the API before billing.
+
+## Docs and API
+Read https://easytoken.si/docs for authentication, tasks, model IDs, billing and callbacks. API base URL: https://api.easytoken.si/v1. Public API tasks require a bearer API key. GET /v1/models and POST /v1/quote do not require a key. The API host root (https://api.easytoken.si/) identifies the API and points to docs, rather than serving the marketing homepage; it is not intended to be indexed. API routes are excluded from search via robots.txt on the marketing host.
