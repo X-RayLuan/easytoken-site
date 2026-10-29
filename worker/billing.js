@@ -51,9 +51,13 @@ export async function stripeWebhook(request, env) {
     const s = event.data.object;
     const userId = s.metadata?.user_id, credit = toMicros(Number(s.metadata?.credit_usd));
     if (s.payment_status === "paid" && userId && credit > 0) {
-      // ledger.ref is unique, so a replayed event inserts nothing and the balance update is skipped.
-      const ins = await env.DB.prepare("INSERT OR IGNORE INTO ledger (user_id, amount, kind, ref) VALUES (?, ?, 'topup', ?)").bind(userId, credit, "stripe:" + s.id).run();
-      if (ins.meta.changes) await env.DB.prepare("UPDATE users SET balance = balance + ? WHERE id = ?").bind(credit, userId).run();
+      // D1 batch runs in one transaction. changes() is from the preceding INSERT on
+      // the same connection: only the first delivery increments the balance.
+      const ref = "stripe:" + s.id;
+      await env.DB.batch([
+        env.DB.prepare("INSERT OR IGNORE INTO ledger (user_id, amount, kind, ref) VALUES (?, ?, 'topup', ?)").bind(userId, credit, ref),
+        env.DB.prepare("UPDATE users SET balance = balance + ? WHERE id = ? AND changes() = 1").bind(credit, userId),
+      ]);
     }
   }
   return json({ ok: true });
