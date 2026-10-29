@@ -1,5 +1,5 @@
 // Accounts, browser sessions and API keys.
-import { fail, json, readJson, newId, randomToken, sha256, hashPassword, verifyPassword, nowIso, clientIp, toMicros, toUsd } from "./util.js";
+import { fail, json, readJson, newId, randomToken, sha256, hashPassword, verifyPassword, nowIso, clientIp, toMicros, toUsd, parseUsd } from "./util.js";
 
 const SESSION_COOKIE = "et_session";
 const SESSION_DAYS = 30;
@@ -41,11 +41,11 @@ export async function requireApiKey(request, env, ctx) {
   return { user, key };
 }
 
-async function createKey(env, userId, name, capUsd) {
+async function createKey(env, userId, name, capUsd, extras = {}) {
   const secret = "et_live_" + randomToken(32);
   const id = newId("key");
-  await env.DB.prepare("INSERT INTO api_keys (id, user_id, name, key_hash, prefix, last4, daily_cap) VALUES (?, ?, ?, ?, ?, ?, ?)")
-    .bind(id, userId, name, await sha256(secret), secret.slice(0, 12), secret.slice(-4), toMicros(capUsd)).run();
+  await env.DB.prepare("INSERT INTO api_keys (id, user_id, name, key_hash, prefix, last4, daily_cap, spend_cap, max_cost, agent_label, task_label) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    .bind(id, userId, name, await sha256(secret), secret.slice(0, 12), secret.slice(-4), parseUsd(capUsd), extras.spend_cap ?? null, extras.max_cost ?? null, extras.agent_label ?? null, extras.task_label ?? null).run();
   return { id, secret };
 }
 
@@ -101,18 +101,26 @@ export function publicUser(u) {
 }
 
 export async function listKeys(env, user) {
-  const { results } = await env.DB.prepare("SELECT id, name, prefix, last4, daily_cap, last_used_at, created_at FROM api_keys WHERE user_id = ? AND revoked_at IS NULL ORDER BY created_at DESC").bind(user.id).all();
-  return json({ keys: results.map(k => ({ id: k.id, name: k.name, preview: `${k.prefix}••••${k.last4}`, daily_cap_usd: toUsd(k.daily_cap), last_used_at: k.last_used_at, created_at: k.created_at })) });
+  const { results } = await env.DB.prepare("SELECT id, name, prefix, last4, daily_cap, spend_cap, max_cost, agent_label, task_label, last_used_at, created_at FROM api_keys WHERE user_id = ? AND revoked_at IS NULL ORDER BY created_at DESC").bind(user.id).all();
+  return json({ keys: results.map(k => ({ id: k.id, name: k.name, preview: `${k.prefix}••••${k.last4}`, daily_cap_usd: toUsd(k.daily_cap), spend_cap_usd: k.spend_cap == null ? null : toUsd(k.spend_cap), max_cost_usd: k.max_cost == null ? null : toUsd(k.max_cost), agent_label: k.agent_label, task_label: k.task_label, last_used_at: k.last_used_at, created_at: k.created_at })) });
 }
 export async function addKey(request, env, user) {
   const body = await readJson(request);
   const name = String(body.name || "").trim().slice(0, 60);
-  const cap = Number(body.daily_cap_usd);
+  const cap = parseUsd(body.daily_cap_usd);
   if (!name) fail(422, "invalid_input", "Give the key a name.");
-  if (!(cap >= 1 && cap <= 100000)) fail(422, "invalid_input", "Daily cap must be between $1 and $100,000.");
+  if (!(cap >= 1e6 && cap <= 100000e6)) fail(422, "invalid_input", "Daily cap must be between $1 and $100,000.");
   const live = await env.DB.prepare("SELECT COUNT(*) AS n FROM api_keys WHERE user_id = ? AND revoked_at IS NULL").bind(user.id).first();
   if (live.n >= 20) fail(422, "too_many_keys", "Revoke an unused key before creating another (limit 20).");
-  const { id, secret } = await createKey(env, user.id, name, cap);
+  const label = name => {
+    if (body[name] == null) return null;
+    if (typeof body[name] !== "string" || body[name].length > 80) fail(422, "invalid_input", `${name} must be a short string.`);
+    return body[name];
+  };
+  const { id, secret } = await createKey(env, user.id, name, body.daily_cap_usd, {
+    spend_cap: body.spend_cap_usd == null ? null : parseUsd(body.spend_cap_usd),
+    max_cost: body.max_cost_usd == null ? null : parseUsd(body.max_cost_usd),
+    agent_label: label("agent_label"), task_label: label("task_label") });
   return json({ id, key: secret }, 201);
 }
 export async function revokeKey(env, user, id) {

@@ -4,6 +4,20 @@ export const MICRO = 1_000_000;
 export const toMicros = usd => Math.round(usd * MICRO);
 export const toUsd = micros => Math.round(micros) / MICRO;
 
+export function parseUsd(v) {
+  const text = typeof v === "number" && Number.isFinite(v) ? String(v) : v;
+  if (typeof text !== "string" || !/^(?:0|[1-9]\d{0,8})(?:\.\d{1,6})?$/.test(text)) fail(422, "invalid_input", "Amount must be positive USD with at most six decimals.");
+  const [whole, fraction = ""] = text.split(".");
+  const micros = Number(whole) * MICRO + Number(fraction.padEnd(6, "0"));
+  if (!Number.isSafeInteger(micros) || micros <= 0) fail(422, "invalid_input", "Amount must be positive and exactly representable.");
+  return micros;
+}
+export function canonicalJson(v) {
+  if (v === null || typeof v === "string" || typeof v === "boolean" || (typeof v === "number" && Number.isFinite(v))) return JSON.stringify(v);
+  if (Array.isArray(v)) return `[${v.map(canonicalJson).join(",")}]`;
+  if (v && typeof v === "object") return `{${Object.keys(v).sort().map(k => `${JSON.stringify(k)}:${canonicalJson(v[k])}`).join(",")}}`;
+  fail(422, "invalid_input", "Unsupported request value.");
+}
 export class ApiError extends Error {
   constructor(status, code, message, headers = {}) { super(message); this.status = status; this.code = code; this.headers = headers; }
 }
@@ -13,9 +27,11 @@ export function json(body, status = 200, headers = {}) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...headers } });
 }
 export function errorResponse(e) {
-  if (e instanceof ApiError) return json({ error: { code: e.code, message: e.message } }, e.status, e.headers);
+  if (e instanceof ApiError) return json({ error: { code: e.code, message: e.message,
+    type: e.status === 429 ? "rate_limit_error" : e.status >= 500 ? "server_error" : "invalid_request_error",
+    param: null, ...(e.status === 429 ? { retry_after: Number(e.headers["retry-after"] || 15) } : {}) } }, e.status, e.headers);
   console.error("unhandled", e?.stack || e);
-  return json({ error: { code: "internal_error", message: "Something went wrong on our side. Please retry." } }, 500);
+  return json({ error: { code: "internal_error", message: "Something went wrong on our side. Please retry.", type: "server_error", param: null } }, 500);
 }
 
 export async function readJson(request, max = 256 * 1024) {

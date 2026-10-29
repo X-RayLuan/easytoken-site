@@ -6,14 +6,18 @@ export async function submitUpstream(env, { model, input, callbackUrl }) {
     method: "POST",
     headers: { authorization: `Bearer ${env.KIE_API_KEY}`, "content-type": "application/json" },
     body: JSON.stringify({ model, input, callBackUrl: callbackUrl }),
+    signal: AbortSignal.timeout(20000),
   });
   let p = null; try { p = await r.json(); } catch {}
+  // A server error or unparsable success is ambiguous: Kie may already have accepted the job.
+  if (r.status >= 500 || (r.ok && !p)) return { uncertain: true };
   // kie reports errors in the body `code` with HTTP 200.
   const code = Number(p?.code ?? r.status);
   if (code === 200 && p?.data?.taskId) return { ok: true, upstreamId: p.data.taskId };
-  console.error("kie create", model, code, p?.msg);
+  if (code >= 500) return { uncertain: true };
+  console.error("kie create", model, code);
   // 402/401 are about OUR kie account, so customers see a generic provider error.
-  return { ok: false, clientError: code === 422 || code === 400, message: code === 422 || code === 400 ? `Invalid input: ${p?.msg || "rejected by the provider"}.` : "The provider could not start this task." };
+  return { ok: false, clientError: code === 422 || code === 400, message: code === 422 || code === 400 ? "Invalid input rejected by the provider." : "The provider could not start this task." };
 }
 
 const parse = v => { if (typeof v !== "string") return v; try { return JSON.parse(v); } catch { return null; } };

@@ -1,10 +1,9 @@
 // Media tasks: reserve credits, submit to kie.ai, track status, refund failures, deliver webhooks.
-import { fail, json, newId, nowIso, hmac, safeEqual, toUsd, safeCallbackUrl } from "./util.js";
-import { mediaModel, quote } from "./catalog.js";
+import { fail, json, newId, nowIso, hmac, safeEqual, toUsd, safeCallbackUrl, sha256, canonicalJson, parseUsd } from "./util.js";
+import { mediaModel, quote, MAX_RUNNING_PER_MODEL } from "./catalog.js";
 import { submitUpstream, pollUpstream } from "./kie.js";
 
 const OPEN = ["queued", "running"];
-const MAX_RUNNING_PER_MODEL = 10;
 const TASK_TIMEOUT_MS = 2 * 3600e3;
 const CALLBACK_BACKOFF_S = [10, 60, 300, 1800, 7200];
 
@@ -28,12 +27,17 @@ export function publicTask(t) {
   const out = { id: t.id, object: "task", model: t.model, status: t.status, cost_usd: toUsd(t.cost), created_at: t.created_at };
   if (t.finished_at) out.finished_at = t.finished_at;
   if (t.result_json) out.result = JSON.parse(t.result_json);
-  if (t.error) out.error = { message: t.error };
+  if (t.error) out.error = { message: t.error, ...(t.submit_error_code ? { code: t.submit_error_code } : {}) };
   if (t.metadata_json) out.metadata = JSON.parse(t.metadata_json);
   return out;
 }
 
-export async function createTask(env, ctx, { user, keyId, body, origin }) {
+function replay(existing, hash) {
+  if (existing.request_hash !== hash) fail(409, "idempotency_conflict", "Idempotency-Key was used for a different request.");
+  return { ...existing, replayed: true };
+}
+
+export async function createTask(env, ctx, { user, keyId, body, origin, idempotencyKey = null }) {
   const model = mediaModel(body.model);
   if (!model) fail(404, "model_not_found", `Unknown model '${String(body.model ?? "")}'. See GET /v1/models.`);
   const input = body.input;
@@ -48,27 +52,45 @@ export async function createTask(env, ctx, { user, keyId, body, origin }) {
   const { up, micros: cost } = quote(model, input); // throws 422 on bad input; price depends on resolution, duration, etc.
   const upstream = up(`${origin}/api/upstream/kie?task=${id}&sig=${await hmac(env.INTERNAL_SECRET, id)}`);
 
-  const running = await env.DB.prepare("SELECT COUNT(*) AS n FROM tasks WHERE user_id = ? AND model = ? AND status IN ('queued','running')").bind(user.id, model.id).first();
-  if (running.n >= MAX_RUNNING_PER_MODEL) fail(429, "rate_limited", `You already have ${MAX_RUNNING_PER_MODEL} ${model.id} tasks running. Wait for one to finish.`, { "retry-after": "15" });
-  if (keyId) {
-    const key = await env.DB.prepare("SELECT daily_cap FROM api_keys WHERE id = ?").bind(keyId).first();
-    if ((await keySpentToday(env, keyId)) + cost > key.daily_cap) fail(402, "spend_cap_reached", "This key has reached its daily spend cap. Raise it in the dashboard or wait until 00:00 UTC.");
+  let idemHash = null, requestHash = null;
+  if (idempotencyKey != null) {
+    if (!keyId) fail(422, "invalid_input", "Idempotency-Key requires an API key.");
+    if (typeof idempotencyKey !== "string" || !/^[\x20-\x7e]{1,128}$/.test(idempotencyKey)) fail(422, "invalid_input", "Idempotency-Key must be 1–128 printable ASCII characters.");
+    idemHash = await sha256(`POST /v1/tasks\n${idempotencyKey}`);
+    requestHash = await sha256(canonicalJson(body));
+    const existing = await env.DB.prepare("SELECT * FROM tasks WHERE key_id = ? AND idempotency_hash = ?").bind(keyId, idemHash).first();
+    if (existing) return replay(existing, requestHash);
   }
-  if (!(await debit(env, user.id, cost, "task:" + id))) fail(402, "insufficient_credits", `This task costs $${toUsd(cost)} and your balance is ${"$" + toUsd(user.balance).toFixed(2)}. Top up in the dashboard.`);
-
-  await env.DB.prepare("INSERT INTO tasks (id, user_id, key_id, model, kind, status, cost, input_json, metadata_json, callback_url, polled_at) VALUES (?, ?, ?, ?, 'media', 'queued', ?, ?, ?, ?, ?)")
-    .bind(id, user.id, keyId, model.id, cost, JSON.stringify(input), metadata, callbackUrl, nowIso()).run();
+  const ceiling = body.max_cost_usd == null ? null : parseUsd(body.max_cost_usd);
+  if (ceiling !== null && cost > ceiling) fail(402, "budget_exceeded", "Quoted cost exceeds the requested maximum.");
+  try {
+    await env.DB.prepare("INSERT INTO tasks (id, user_id, key_id, model, kind, status, cost, quoted_cost, input_json, metadata_json, callback_url, polled_at, idempotency_hash, request_hash) VALUES (?, ?, ?, ?, 'media', 'queued', ?, ?, ?, ?, ?, ?, ?, ?)")
+      .bind(id, user.id, keyId, model.id, cost, cost, JSON.stringify(input), metadata, callbackUrl, nowIso(), idemHash, requestHash).run();
+  } catch (e) {
+    if (idemHash) {
+      const existing = await env.DB.prepare("SELECT * FROM tasks WHERE key_id = ? AND idempotency_hash = ?").bind(keyId, idemHash).first();
+      if (existing) return replay(existing, requestHash);
+    }
+    const message = String(e?.message || "");
+    if (message.includes("budget_exceeded")) fail(402, "budget_exceeded", "Key budget exceeded.");
+    if (message.includes("insufficient_balance")) fail(402, "insufficient_balance", "Insufficient balance.");
+    if (message.includes("rate_limited")) fail(429, "rate_limited", "Concurrent task limit reached.", { "retry-after": "15" });
+    if (message.includes("key_revoked")) fail(401, "invalid_api_key", "This key has been revoked.");
+    throw e;
+  }
 
   let res;
   try { res = await submitUpstream(env, upstream); }
-  catch (e) { res = { ok: false, message: "Upstream provider unreachable." }; }
+  catch { res = { uncertain: true }; }
+  // An ambiguous create may already be running at Kie. Never submit it a second time.
+  if (res.uncertain) return { ...(await getTaskRow(env, id)), reserved: true, submitTimeout: true };
   if (!res.ok) {
-    await finishTask(env, ctx, id, { status: "failed", error: res.message || "The provider rejected the task." });
-    const status = res.clientError ? 422 : 502;
-    fail(status, res.clientError ? "invalid_input" : "upstream_error", `${res.message || "The provider rejected the task."} You were not charged.`);
+    const code = res.clientError ? "invalid_input" : "upstream_error";
+    await finishTask(env, ctx, id, { status: "failed", error: res.message || "The provider rejected the task.", submitErrorCode: code });
+    fail(res.clientError ? 422 : 502, code, "The provider rejected the task. You were not charged.");
   }
   await env.DB.prepare("UPDATE tasks SET upstream_id = ?, status = 'running' WHERE id = ? AND status = 'queued'").bind(res.upstreamId, id).run();
-  return getTaskRow(env, id);
+  return { ...(await getTaskRow(env, id)), reserved: true };
 }
 
 export async function getTaskRow(env, id, userId) {
@@ -91,19 +113,12 @@ export async function refreshTask(env, ctx, t) {
 }
 
 // Move an open task to a final state exactly once. Failed tasks are refunded in full.
-export async function finishTask(env, ctx, id, { status, result, error }) {
+export async function finishTask(env, ctx, id, { status, result, error, submitErrorCode = null }) {
   const t = await getTaskRow(env, id);
   if (!t || !OPEN.includes(t.status)) return;
-  const r = await env.DB.prepare("UPDATE tasks SET status = ?, result_json = ?, error = ?, finished_at = ?, callback_due_at = ? WHERE id = ? AND status IN ('queued','running')")
-    .bind(status, result ? JSON.stringify(result) : null, error ? String(error).slice(0, 500) : null, nowIso(), t.callback_url ? nowIso() : null, id).run();
+  const r = await env.DB.prepare("UPDATE tasks SET status = ?, cost = CASE WHEN ? = 'failed' THEN 0 ELSE cost END, result_json = ?, error = ?, submit_error_code = ?, finished_at = ?, callback_due_at = ? WHERE id = ? AND status IN ('queued','running')")
+    .bind(status, status, result ? JSON.stringify(result) : null, error ? String(error).slice(0, 500) : null, submitErrorCode, nowIso(), t.callback_url ? nowIso() : null, id).run();
   if (!r.meta.changes) return;
-  if (status === "failed" && t.cost > 0) {
-    await env.DB.batch([
-      env.DB.prepare("UPDATE users SET balance = balance + ? WHERE id = ?").bind(t.cost, t.user_id),
-      env.DB.prepare("INSERT OR IGNORE INTO ledger (user_id, amount, kind, ref) VALUES (?, ?, 'refund', ?)").bind(t.user_id, t.cost, "refund:" + id),
-      env.DB.prepare("UPDATE tasks SET cost = 0 WHERE id = ?").bind(id),
-    ]);
-  }
   if (t.callback_url) ctx.waitUntil(deliverCallback(env, id));
 }
 

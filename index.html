@@ -38,17 +38,20 @@
     <div class="wrap hero-grid">
       <div class="hero-copy">
         <div class="eyebrow">Video · Image · Audio</div>
-        <h1>Video, image &amp; audio models.<br>One <svg class="coin" aria-hidden="true"><use href="#coin"/></svg>key.</h1>
-        <p class="lede">EasyToken puts Veo, Seedance, Kling, GPT Image, Suno and more behind a single API key and a single bill. Compare our prices with the Official / Fal price listed by Kie. Failed tasks are refunded to your balance.</p>
+        <h1>The media API your agents can budget.</h1>
+        <p class="lede">One key for Veo, Kling, Seedance, GPT Image and Suno. Per-call cost and balance returned; per-agent sub-keys with budgets. Failed tasks are refunded.</p>
         <div class="cta-row">
-          <a class="btn btn-primary" href="/signup">Get your free API key</a>
-          <a class="btn btn-ghost" href="#pricing">Compare prices</a>
+          <a class="btn btn-primary" href="/signup">Get your API key</a>
+          <a class="btn btn-ghost" href="/llms.txt">Agent quickstart</a>
         </div>
-        <p class="note">EasyToken offers video, image and audio model APIs, not chat or text models.</p>
+        <p class="note">EasyToken offers video, image and audio model APIs, not chat or text models. <a href="/llms.txt">llms.txt</a> · <a href="/docs">API docs</a></p>
+        <pre class="code" aria-label="Agent API example">POST /v1/tasks  {"model":"veo-3.1","input":{"prompt":"Your scene"}}
+X-EasyToken-Cost: &lt;reserved USD&gt;
+X-EasyToken-Balance: &lt;available USD&gt;</pre>
         <div class="facts">
           <span>Failed tasks billed at $0</span>
           <span>No monthly fee</span>
-          <span>Free credits on signup</span>
+          <span>Per-agent budgets</span>
         </div>
       </div>
 
@@ -131,7 +134,7 @@
         <p>Media jobs run asynchronously, so a long Veo render never ties up your server.</p>
       </div>
       <div class="steps">
-        <div class="step"><div class="n">Step 1</div><h3>Create a key</h3><p>Sign up, claim your free credits, and copy one key that works for every model.</p></div>
+        <div class="step"><div class="n">Step 1</div><h3>Create a key</h3><p>Sign up and copy one key that works for every model.</p></div>
         <div class="step"><div class="n">Step 2</div><h3>Send a task</h3><p>POST to <code>/v1/tasks</code> with a <code>model</code> and its input. Switching models means changing one string.</p></div>
         <div class="step"><div class="n">Step 3</div><h3>Get the result</h3><p>We call your <code>callback_url</code> when the file is ready, or you poll <code>/v1/tasks/{id}</code>.</p></div>
       </div>
@@ -198,11 +201,11 @@
     <div class="wrap">
       <div class="closing">
         <div>
-          <h2>Start with free credits.</h2>
+          <h2>Start building with one key.</h2>
           <p>Create a key to try a supported video, image or audio task.</p>
         </div>
         <div class="cta-row">
-          <a class="btn btn-primary" href="/signup">Get your free API key</a>
+          <a class="btn btn-primary" href="/signup">Get your API key</a>
           <a class="btn btn-ghost" href="/docs">Read the docs</a>
         </div>
       </div>

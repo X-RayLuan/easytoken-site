@@ -5,8 +5,25 @@ import { createTask, getTaskRow, refreshTask, publicTask, upstreamCallback, swee
 import { checkout, stripeWebhook } from "./billing.js";
 import { allModels, mediaModel, quote } from "./catalog.js";
 
-const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, content-type", "access-control-allow-methods": "GET, POST, OPTIONS", "access-control-max-age": "86400" };
+const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization, content-type, idempotency-key", "access-control-allow-methods": "GET, POST, OPTIONS", "access-control-max-age": "86400", "access-control-expose-headers": "X-EasyToken-Cost, X-EasyToken-Balance, X-EasyToken-Currency, X-EasyToken-Units, Retry-After, Idempotency-Replayed" };
 const withCors = res => { const r = new Response(res.body, res); for (const [k, v] of Object.entries(CORS)) r.headers.set(k, v); return r; };
+
+async function v1Headers(res, request, env) {
+  const r = withCors(res);
+  r.headers.set("x-easytoken-cost", r.headers.get("x-easytoken-cost") || "0.000000");
+  r.headers.set("x-easytoken-currency", "USD");
+  r.headers.set("x-easytoken-units", "decimal-usd");
+  r.headers.set("x-easytoken-balance", "unknown");
+  const bearer = (request.headers.get("authorization") || "").match(/^Bearer\s+(et_live_\S+)$/i);
+  if (bearer) {
+    try {
+      const { sha256 } = await import("./util.js");
+      const row = await env.DB.prepare("SELECT u.balance FROM api_keys k JOIN users u ON u.id = k.user_id WHERE k.key_hash = ? AND k.revoked_at IS NULL").bind(await sha256(bearer[1])).first();
+      if (row) r.headers.set("x-easytoken-balance", (row.balance / 1e6).toFixed(6));
+    } catch {} // Database unavailable: unknown, never a stale balance.
+  }
+  return r;
+}
 
 // Poll an open task at most every 10s when someone reads it; the cron and kie callback cover the rest.
 async function freshTask(env, ctx, t) {
@@ -17,7 +34,7 @@ async function freshTask(env, ctx, t) {
 // Price of a task without running it: same validation and pricing as POST /v1/tasks, no key needed.
 function priceQuote(body) {
   const model = mediaModel(body.model);
-  if (!model) fail(404, "model_not_found", `Unknown model '${String(body.model ?? "")}'. See GET /v1/models.`);
+  if (!model) fail(404, "invalid_model", `Unknown model '${String(body.model ?? "")}'. See GET /v1/models.`);
   if (!body.input || typeof body.input !== "object" || Array.isArray(body.input)) fail(422, "invalid_input", "input must be an object, e.g. { \"prompt\": \"…\" }.");
   const { micros, charges } = quote(model, body.input);
   return { object: "quote", model: model.id, cost_usd: toUsd(micros),
@@ -29,17 +46,23 @@ async function v1(request, env, ctx, path) {
   if (path === "/v1/models" && method === "GET") return json({ object: "list", data: allModels() });
   if (path === "/v1/quote" && method === "POST") return json(priceQuote(await readJson(request)));
   // Text (chat) models were removed; answer before auth so nothing is read, sent upstream or charged.
-  if (path === "/v1/chat/completions") fail(404, "model_not_found", "EasyToken does not offer chat (text) models. Video, image and audio models: GET /v1/models.");
+  if (path === "/v1/chat/completions") fail(404, "invalid_model", "EasyToken does not offer chat (text) models. Video, image and audio models: GET /v1/models.");
   const { user, key } = await requireApiKey(request, env, ctx);
   const origin = env.PUBLIC_ORIGIN || new URL(request.url).origin;
-  if (path === "/v1/tasks" && method === "POST") return json(publicTask(await createTask(env, ctx, { user, keyId: key.id, body: await readJson(request), origin })), 202);
+  if (path === "/v1/tasks" && method === "POST") {
+    const t = await createTask(env, ctx, { user, keyId: key.id, body: await readJson(request), origin, idempotencyKey: request.headers.get("idempotency-key") });
+    const response = json(publicTask(t), t.submitTimeout ? 504 : t.replayed ? 200 : 202,
+      { ...(t.replayed ? { "idempotency-replayed": "true" } : {}), ...(t.submitTimeout ? { "x-easytoken-submit-uncertain": "true" } : {}) });
+    if (t.reserved) response.headers.set("x-easytoken-cost", (t.quoted_cost / 1e6).toFixed(6));
+    return response;
+  }
   let m = path.match(/^\/v1\/tasks\/([\w-]+)$/);
   if (m && method === "GET") {
     const t = await getTaskRow(env, m[1], user.id);
     if (!t || t.kind !== "media") fail(404, "not_found", "Task not found.");
     return json(publicTask(await freshTask(env, ctx, t)));
   }
-  if (path === "/v1/balance" && method === "GET") return json({ balance_usd: toUsd(user.balance) });
+  if (path === "/v1/balance" && method === "GET") return json({ balance_usd: toUsd((await env.DB.prepare("SELECT balance FROM users WHERE id = ?").bind(user.id).first()).balance) });
   fail(404, "not_found", `No route for ${method} ${path}.`);
 }
 
@@ -63,7 +86,7 @@ async function usage(env, user) {
 // Playground runs use the signed-in session instead of an API key and bill the same balance.
 async function playground(request, env, ctx, user, origin) {
   const { model, prompt, input } = await readJson(request);
-  if (!mediaModel(model)) fail(404, "model_not_found", "Pick a model from the list.");
+  if (!mediaModel(model)) fail(404, "invalid_model", "Pick a model from the list.");
   const t = await createTask(env, ctx, { user, keyId: null, body: { model, input: { ...(input || {}), prompt: String(prompt || "") } }, origin });
   return json(publicTask(t), 202);
 }
@@ -105,8 +128,8 @@ export default {
     let path = url.pathname.replace(/\/+$/, "") || "/";
     try {
       if (path.startsWith("/v1/") || path === "/v1") {
-        if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
-        return withCors(await v1(request, env, ctx, path));
+        if (request.method === "OPTIONS") return await v1Headers(new Response(null, { status: 204 }), request, env);
+        return await v1Headers(await v1(request, env, ctx, path), request, env);
       }
       if (path.startsWith("/api/")) return await api(request, env, ctx, path);
       // All requests reach the Worker first, including static asset paths on the API host.
@@ -126,7 +149,7 @@ export default {
       }
     } catch (e) {
       const res = errorResponse(e);
-      return path.startsWith("/v1") ? withCors(res) : res;
+      return path.startsWith("/v1") ? await v1Headers(res, request, env) : res;
     }
     return env.ASSETS.fetch(request);
   },
